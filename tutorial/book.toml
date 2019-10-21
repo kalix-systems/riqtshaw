@@ -1,8 +1,0 @@
-[book]
-title = "The official Rust Qt Binding Generator Guide"
-author = "Jos van den Oever"
-description = "Giving Rust a cute wrapping!"
-src = "."
-
-[build]
-build-dir = "../build/tutorial"

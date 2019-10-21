@@ -9,18 +9,8 @@ pub enum RustEdition {
     Unknown,
 }
 
-impl<'a> ::std::convert::From<Option<&'a str>> for RustEdition {
-    fn from(str: Option<&'a str>) -> RustEdition {
-        match str {
-            None | Some("2015") => RustEdition::Rust2015,
-            Some("2018") => RustEdition::Rust2018,
-            _ => RustEdition::Unknown,
-        }
-    }
-}
-
 pub struct Config {
-    pub config_file: PathBuf,
+    pub out_dir: PathBuf,
     pub cpp_file: PathBuf,
     pub objects: BTreeMap<String, Rc<Object>>,
     pub rust: Rust,

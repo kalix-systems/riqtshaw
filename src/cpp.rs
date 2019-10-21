@@ -1384,7 +1384,7 @@ fn constructor_args(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) ->
 }
 
 pub fn write_header(conf: &Config) -> Result<()> {
-    let mut h_file = conf.config_file.parent().unwrap().join(&conf.cpp_file);
+    let mut h_file = conf.out_dir.join(&conf.cpp_file);
     h_file.set_extension("h");
     let mut h = Vec::new();
     let guard = h_file
@@ -1419,7 +1419,7 @@ pub fn write_header(conf: &Config) -> Result<()> {
 
 pub fn write_cpp(conf: &Config) -> Result<()> {
     let mut w = Vec::new();
-    let mut h_file = conf.config_file.parent().unwrap().join(&conf.cpp_file);
+    let mut h_file = conf.out_dir.join(&conf.cpp_file);
     h_file.set_extension("h");
     let file_name = h_file.file_name().unwrap().to_string_lossy();
     writeln!(
@@ -1512,6 +1512,6 @@ namespace {{",
     for o in conf.objects.values() {
         write_cpp_object(&mut w, o, conf)?;
     }
-    let file = conf.config_file.parent().unwrap().join(&conf.cpp_file);
+    let file = conf.out_dir.join(&conf.cpp_file);
     write_if_different(file, &w)
 }

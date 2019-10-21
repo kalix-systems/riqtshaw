@@ -1285,9 +1285,7 @@ use {}{}::*;",
         write_rust_interface_object(&mut r, object, conf)?;
     }
     let mut file = conf
-        .config_file
-        .parent()
-        .unwrap()
+        .out_dir
         .join(&conf.rust.dir)
         .join("src")
         .join(&conf.rust.interface_module);
@@ -1510,9 +1508,7 @@ fn write_rust_implementation_object(r: &mut Vec<u8>, o: &Object) -> Result<()> {
 
 pub fn write_implementation(conf: &Config) -> Result<()> {
     let mut file = conf
-        .config_file
-        .parent()
-        .unwrap()
+        .out_dir
         .join(&conf.rust.dir)
         .join("src")
         .join(&conf.rust.implementation_module);
