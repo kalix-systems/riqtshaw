@@ -7,6 +7,7 @@ license = "AGPL-3.0-or-later"
 documentation = "https://phabricator.kde.org/source/rust-qt-binding-generator/"
 homepage = "https://phabricator.kde.org/source/rust-qt-binding-generator/"
 repository = "https://anongit.kde.org/rust-qt-binding-generator"
+edition = "2018"
 
 [dependencies]
 cc = { version = "1", features = ["parallel"] }
