@@ -171,7 +171,7 @@ private:"
         "    explicit {}(bool owned, QObject *parent);
 public:
     explicit {0}(QObject *parent = nullptr);
-    ~{0}();",
+    ~{0}() override;",
         o.name
     )?;
     for (name, p) in &o.properties {
