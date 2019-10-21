@@ -1,62 +1,7 @@
-use configuration_private::*;
-use serde_json;
+use crate::configuration_private::*;
 use std::collections::{BTreeMap, BTreeSet};
-use std::error::Error;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
-use toml;
-
-mod json {
-    use super::Rust;
-    use std::collections::BTreeMap;
-    use std::path::PathBuf;
-
-    pub fn false_bool() -> bool {
-        false
-    }
-
-    fn object() -> super::ObjectType {
-        super::ObjectType::Object
-    }
-
-    #[derive(Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct Config {
-        #[serde(rename = "cppFile")]
-        pub cpp_file: PathBuf,
-        pub objects: BTreeMap<String, Object>,
-        pub rust: Rust,
-        #[serde(default = "false_bool")]
-        pub overwrite_implementation: bool,
-    }
-
-    #[derive(Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct Object {
-        #[serde(default)]
-        pub functions: BTreeMap<String, super::Function>,
-        #[serde(rename = "itemProperties", default)]
-        pub item_properties: BTreeMap<String, super::ItemProperty>,
-        #[serde(rename = "type", default = "object")]
-        pub object_type: super::ObjectType,
-        #[serde(default)]
-        pub properties: BTreeMap<String, Property>,
-    }
-
-    #[derive(Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct Property {
-        #[serde(default = "false_bool")]
-        pub optional: bool,
-        #[serde(rename = "type")]
-        pub property_type: String,
-        #[serde(rename = "rustByFunction", default = "false_bool")]
-        pub rust_by_function: bool,
-        #[serde(default = "false_bool")]
-        pub write: bool,
-    }
-}
 
 pub enum RustEdition {
     Rust2015,
@@ -177,50 +122,34 @@ impl TypeName for Property {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Rust {
     pub dir: PathBuf,
-    #[serde(rename = "implementationModule")]
     pub implementation_module: String,
-    #[serde(rename = "interfaceModule")]
     pub interface_module: String,
 }
 
-#[derive(Deserialize, Clone, Copy, PartialEq)]
+#[derive(PartialEq)]
 pub enum ObjectType {
     Object,
     List,
     Tree,
 }
 
-#[derive(Deserialize, Clone, Copy, PartialEq)]
+#[derive(PartialEq)]
 pub enum SimpleType {
     QString,
     QByteArray,
-    #[serde(rename = "bool")]
     Bool,
-    #[serde(rename = "float")]
     Float,
-    #[serde(rename = "double")]
     Double,
-    #[serde(rename = "void")]
     Void,
-    #[serde(rename = "qint8")]
     Qint8,
-    #[serde(rename = "qint16")]
     Qint16,
-    #[serde(rename = "qint32")]
     Qint32,
-    #[serde(rename = "qint64")]
     Qint64,
-    #[serde(rename = "quint8")]
     QUint8,
-    #[serde(rename = "quint16")]
     QUint16,
-    #[serde(rename = "quint32")]
     QUint32,
-    #[serde(rename = "quint64")]
     QUint64,
 }
 
@@ -341,18 +270,12 @@ impl TypePrivate for Type {
     }
 }
 
-#[derive(Deserialize, Clone, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[derive(PartialEq)]
 pub struct ItemProperty {
-    #[serde(rename = "type")]
     pub item_property_type: SimpleType,
-    #[serde(default = "json::false_bool")]
     pub optional: bool,
-    #[serde(default)]
     pub roles: Vec<Vec<String>>,
-    #[serde(rename = "rustByValue", default = "json::false_bool")]
     pub rust_by_value: bool,
-    #[serde(default = "json::false_bool")]
     pub write: bool,
 }
 
@@ -382,14 +305,10 @@ impl ItemPropertyPrivate for ItemProperty {
     }
 }
 
-#[derive(Deserialize, Clone, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[derive(PartialEq)]
 pub struct Function {
-    #[serde(rename = "return")]
     pub return_type: SimpleType,
-    #[serde(rename = "mut", default = "json::false_bool")]
     pub mutable: bool,
-    #[serde(default)]
     pub arguments: Vec<Argument>,
 }
 
@@ -399,11 +318,9 @@ impl TypeName for Function {
     }
 }
 
-#[derive(Deserialize, Clone, PartialEq)]
-#[serde(deny_unknown_fields)]
+#[derive(PartialEq)]
 pub struct Argument {
     pub name: String,
-    #[serde(rename = "type")]
     pub argument_type: SimpleType,
 }
 
@@ -411,88 +328,4 @@ impl TypeName for Argument {
     fn type_name(&self) -> &str {
         self.argument_type.name()
     }
-}
-
-fn post_process_property(
-    a: (&String, &json::Property),
-    b: &mut BTreeMap<String, Rc<Object>>,
-    c: &BTreeMap<String, json::Object>,
-) -> Result<Property, Box<dyn Error>> {
-    let name = &a.1.property_type;
-    let t = match serde_json::from_str::<SimpleType>(&format!("\"{}\"", name)) {
-        Err(_) => {
-            if b.get(name).is_none() {
-                if let Some(object) = c.get(name) {
-                    post_process_object((name, object), b, c)?;
-                } else {
-                    return Err(format!("Type {} cannot be found.", name).into());
-                }
-            }
-            Type::Object(Rc::clone(b.get(name).unwrap()))
-        }
-        Ok(simple) => Type::Simple(simple),
-    };
-    Ok(Property {
-        property_type: t,
-        optional: a.1.optional,
-        rust_by_function: a.1.rust_by_function,
-        write: a.1.write,
-    })
-}
-
-fn post_process_object(
-    a: (&String, &json::Object),
-    b: &mut BTreeMap<String, Rc<Object>>,
-    c: &BTreeMap<String, json::Object>,
-) -> Result<(), Box<dyn Error>> {
-    let mut properties = BTreeMap::default();
-    for p in &a.1.properties {
-        properties.insert(p.0.clone(), post_process_property(p, b, c)?);
-    }
-    let object = Rc::new(Object {
-        name: a.0.clone(),
-        object_type: a.1.object_type,
-        functions: a.1.functions.clone(),
-        item_properties: a.1.item_properties.clone(),
-        properties,
-    });
-    b.insert(a.0.clone(), object);
-    Ok(())
-}
-
-fn post_process(config_file: &Path, json: json::Config) -> Result<Config, Box<dyn Error>> {
-    let mut objects = BTreeMap::default();
-    for object in &json.objects {
-        post_process_object(object, &mut objects, &json.objects)?;
-    }
-
-    let rust_edition: RustEdition = {
-        let mut buf = config_file.to_path_buf();
-        buf.pop();
-        buf.push(&json.rust.dir);
-        buf.push("Cargo.toml");
-        if !buf.exists() {
-            return Err(format!("{} does not exist.", buf.display()).into());
-        }
-        let manifest: toml::Value = fs::read_to_string(&buf)?.parse()?;
-        manifest["package"]
-            .get("edition")
-            .and_then(|val| val.as_str())
-            .into()
-    };
-
-    Ok(Config {
-        config_file: config_file.into(),
-        cpp_file: json.cpp_file,
-        objects,
-        rust: json.rust,
-        rust_edition,
-        overwrite_implementation: json.overwrite_implementation,
-    })
-}
-
-pub fn parse<P: AsRef<Path>>(config_file: P) -> Result<Config, Box<dyn Error>> {
-    let contents = fs::read_to_string(config_file.as_ref())?;
-    let config: json::Config = serde_json::from_str(&contents)?;
-    post_process(config_file.as_ref(), config)
 }

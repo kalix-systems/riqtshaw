@@ -1,9 +1,9 @@
 //! `rust` is the module that generates the rust code for the binding
 
-use configuration::*;
-use configuration_private::*;
+use crate::configuration::*;
+use crate::configuration_private::*;
+use crate::util::{snake_case, write_if_different};
 use std::io::{Result, Write};
-use util::{snake_case, write_if_different};
 
 fn rust_type(p: &Property) -> String {
     if p.optional {
