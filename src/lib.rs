@@ -12,6 +12,5 @@ pub fn generate_bindings(config: &Config) -> Result<(), Box<dyn Error>> {
     cpp::write_header(config)?;
     cpp::write_cpp(config)?;
     rust::write_interface(config)?;
-    rust::write_implementation(config)?;
     Ok(())
 }
