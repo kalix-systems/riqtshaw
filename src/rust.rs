@@ -1173,9 +1173,9 @@ fn write_rust_types(conf: &Config, r: &mut Vec<u8>) -> Result<()> {
 
 macro_rules! qba_slice {{
     ($qba: expr, $qba_len: expr) => {{
-        match to_usize($qba_len) {{
-            Some(len) => ::std::slice::from_raw_parts($qba as *const u8, len),
-            None => &[],
+        match (to_usize($qba_len), $qba.is_null()) {{
+            (Some(len), false) => ::std::slice::from_raw_parts($qba as *const u8, len),
+            _ => &[],
         }}
     }}
 }}
@@ -1288,10 +1288,8 @@ fn to_usize(n: c_int) -> Option<usize> {{
 }}
 
 fn to_c_int(n: usize) -> c_int {{
-    if n > c_int::max_value() as usize {{
-        panic!(\"Cannot cast {{}} to c_int\", n);
-    }}
-    n as c_int
+    // saturate
+    n.min(c_int::max_value() as usize) as c_int
 }}
 "
         )?;
