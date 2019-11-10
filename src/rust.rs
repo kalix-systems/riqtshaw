@@ -331,8 +331,6 @@ pub struct {0}Emitter {{
         r,
         "}}
 
-unsafe impl Send for {}Emitter {{}}
-
 impl {0}Emitter {{
     /// Clone the emitter
     ///
