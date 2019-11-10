@@ -224,6 +224,7 @@ pub unsafe extern \"C\" fn {}_{}(ptr: *{} {}",
         if f.mutable { "mut" } else { "const" },
         o.name
     )?;
+
     // write all the input arguments, for QString and QByteArray, write
     // pointers to their content and the length which is int in Qt
     for a in &f.arguments {
@@ -236,6 +237,7 @@ pub unsafe extern \"C\" fn {}_{}(ptr: *{} {}",
             write!(r, "{}: {}", a.name, a.argument_type.rust_type())?;
         }
     }
+
     // If the return type is QString or QByteArray, append a pointer to the
     // variable that will be set to the argument list. Also add a setter
     // function.
@@ -250,6 +252,7 @@ pub unsafe extern \"C\" fn {}_{}(ptr: *{} {}",
     } else {
         writeln!(r, ") -> {} {{", f.return_type.rust_type())?;
     }
+
     for a in &f.arguments {
         if a.argument_type.name() == "QString" {
             writeln!(
@@ -259,13 +262,10 @@ pub unsafe extern \"C\" fn {}_{}(ptr: *{} {}",
                 a.name
             )?;
         } else if a.argument_type.name() == "QByteArray" {
-            writeln!(
-                r,
-                "    let {} = {{ slice::from_raw_parts({0}_str as *const u8, to_usize({0}_len)) }};",
-                a.name
-            )?;
+            writeln!(r, "let {} = {{ qba_slice!({0}_str, {0}_len) }};", a.name)?;
         }
     }
+
     if f.mutable {
         writeln!(r, "    let o = &mut *ptr;")?;
     } else {
@@ -720,7 +720,8 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_ushort, len: c_int) 
 #[no_mangle]
 pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_char, len: c_int) {{
     let o = &mut *ptr;
-    let v = slice::from_raw_parts(v as *const u8, to_usize(len));
+    let v = qba_slice!(v, len);
+
     o.set_{}(v);
 }}",
                     base,
@@ -772,7 +773,7 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_ushort, len: c_int) 
 #[no_mangle]
 pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_char, len: c_int) {{
     let o = &mut *ptr;
-    let v = slice::from_raw_parts(v as *const u8, to_usize(len));
+    let v = qba_slice!(v, len);
     o.set_{}(Some(v.into()));
 }}",
                     base,
@@ -864,22 +865,37 @@ pub unsafe extern \"C\" fn {}_set_none(ptr: *mut {}) {{
 pub unsafe extern \"C\" fn {1}_row_count(ptr: *const {0}) -> c_int {{
     to_c_int((&*ptr).row_count())
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_insert_rows(ptr: *mut {0}, row: c_int, count: c_int) -> bool {{
-    (&mut *ptr).insert_rows(to_usize(row), to_usize(count))
+    match (to_usize(row), to_usize(count)) {{
+        (Some(row), Some(count)) => {{
+            (&mut *ptr).insert_rows(row, count)
+        }}
+        _ => false
+    }}
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_remove_rows(ptr: *mut {0}, row: c_int, count: c_int) -> bool {{
-    (&mut *ptr).remove_rows(to_usize(row), to_usize(count))
+    match (to_usize(row), to_usize(count)) {{
+        (Some(row), Some(count)) => {{
+            (&mut *ptr).remove_rows(row, count)
+        }}
+        _ => false
+    }}
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_can_fetch_more(ptr: *const {0}) -> bool {{
     (&*ptr).can_fetch_more()
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_fetch_more(ptr: *mut {0}) {{
     (&mut *ptr).fetch_more()
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_sort(
     ptr: *mut {0},
@@ -901,6 +917,7 @@ pub unsafe extern \"C\" fn {1}_row_count(
 ) -> c_int {{
     to_c_int((&*ptr).row_count(index.into()))
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_can_fetch_more(
     ptr: *const {0},
@@ -908,10 +925,12 @@ pub unsafe extern \"C\" fn {1}_can_fetch_more(
 ) -> bool {{
     (&*ptr).can_fetch_more(index.into())
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_fetch_more(ptr: *mut {0}, index: COption<usize>) {{
     (&mut *ptr).fetch_more(index.into())
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_sort(
     ptr: *mut {0},
@@ -920,22 +939,28 @@ pub unsafe extern \"C\" fn {1}_sort(
 ) {{
     (&mut *ptr).sort(column, order)
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_check_row(
     ptr: *const {0},
     index: usize,
     row: c_int,
 ) -> COption<usize> {{
-    (&*ptr).check_row(index, to_usize(row)).into()
+    match to_usize(row) {{
+        Some(row) => (&*ptr).check_row(index, row).into(),
+        other => other.into()
+    }}
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_index(
     ptr: *const {0},
     index: COption<usize>,
     row: c_int,
 ) -> usize {{
-    (&*ptr).index(index.into(), to_usize(row))
+    (&*ptr).index(index.into(), to_usize(row).unwrap_or(0))
 }}
+
 #[no_mangle]
 pub unsafe extern \"C\" fn {1}_parent(ptr: *const {0}, index: usize) -> QModelIndex {{
     if let Some(parent) = (&*ptr).parent(index) {{
@@ -961,7 +986,7 @@ pub unsafe extern \"C\" fn {1}_row(ptr: *const {0}, index: usize) -> c_int {{
         let (index_decl, index) = if o.object_type == ObjectType::Tree {
             (", index: usize", "index")
         } else {
-            (", row: c_int", "to_usize(row)")
+            (", row: c_int", "to_usize(row).unwrap_or(0)")
         };
         for (name, ip) in &o.item_properties {
             if ip.is_complex() && !ip.optional {
@@ -1061,7 +1086,7 @@ pub unsafe extern \"C\" fn {}_set_data_{}(
     s: *const c_char, len: c_int,
 ) -> bool {{
     let o = &mut *ptr;
-    let slice = ::std::slice::from_raw_parts(s as *const u8, to_usize(len));
+    let slice = qba_slice!(s, len);
     o.set_{1}({}, {})
 }}",
                         lcname,
@@ -1191,7 +1216,7 @@ where
 pub enum QString {{}}
 
 fn set_string_from_utf16(s: &mut String, str: *const c_ushort, len: c_int) {{
-    let utf16 = unsafe {{ slice::from_raw_parts(str, to_usize(len)) }};
+    let utf16 = unsafe {{ qba_slice!(str, len) }};
     let characters = decode_utf16(utf16.iter().cloned())
         .map(|r| r.unwrap());
     s.clear();
@@ -1233,20 +1258,12 @@ pub struct QModelIndex {{
             r,
             "
 
-fn to_usize(n: c_int) -> usize {{
-    if n < 0 {{
-        panic!(\"Cannot cast {{}} to usize\", n);
-    }}
-    n as usize
-}}
-"
-        )?;
-    }
+fn to_usize(n: c_int) -> Option<usize> {{
+    use std::convert::TryInto;
 
-    if has_string || has_byte_array || has_list_or_tree {
-        writeln!(
-            r,
-            "
+    n.try_into().ok()
+}}
+
 fn to_c_int(n: usize) -> c_int {{
     if n > c_int::max_value() as usize {{
         panic!(\"Cannot cast {{}} to c_int\", n);
@@ -1256,6 +1273,25 @@ fn to_c_int(n: usize) -> c_int {{
 "
         )?;
     }
+
+    if has_byte_array {
+        writeln!(
+            r,
+            "
+
+macro_rules! qba_slice {{
+    ($qba, $qba_len) => {{
+        match to_usize($qba_len) {{
+            Some(len) => ::std::slice::from_raw_parts($qba as *const u8, qba_len),
+            None => &[],
+        }}
+    }}
+}}
+
+       "
+        )?;
+    }
+
     Ok(())
 }
 
