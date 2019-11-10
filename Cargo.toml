@@ -9,7 +9,4 @@ repository = "https://anongit.kde.org/rust-qt-binding-generator"
 edition = "2018"
 
 [dependencies]
-cc = { version = "1", features = ["parallel"] }
-clap = "2"
 regex= "1"
-toml = "0.4.10"
