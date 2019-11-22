@@ -876,7 +876,7 @@ bool {0}::removeRows(int row, int count, const QModelIndex &)
 QModelIndex {0}::index(int row, int column, const QModelIndex &parent) const
 {{
     if (!parent.isValid() && row >= 0 && row < rowCount(parent) && column >= 0 && column < {2}) {{
-        return createIndex(row, column, (quintptr)row);
+        return createIndex(row, column, static_cast<quintptr>(row));
     }}
     return QModelIndex();
 }}
@@ -1114,7 +1114,7 @@ QVariant {0}::headerData(int section, Qt::Orientation orientation, int role) con
     if (orientation != Qt::Horizontal) {{
         return QVariant();
     }}
-    return m_headerData.value(qMakePair(section, (Qt::ItemDataRole)role), role == Qt::DisplayRole ?QString::number(section + 1) :QVariant());
+    return m_headerData.value(qMakePair(section, static_cast<Qt::ItemDataRole>(role)), role == Qt::DisplayRole ?QString::number(section + 1) :QVariant());
 }}
 
 bool {0}::setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role)
@@ -1122,7 +1122,7 @@ bool {0}::setHeaderData(int section, Qt::Orientation orientation, const QVariant
     if (orientation != Qt::Horizontal) {{
         return false;
     }}
-    m_headerData.insert(qMakePair(section, (Qt::ItemDataRole)role), value);
+    m_headerData.insert(qMakePair(section, static_cast<Qt::ItemDataRole>(role)), value);
     return true;
 }}
 ",
