@@ -4,6 +4,7 @@ pub(super) fn property_type(p: &ItemProperty) -> String {
     if p.optional && !p.item_property_type.is_complex() {
         return "QVariant".into();
     }
+
     p.type_name().to_string()
 }
 
@@ -23,14 +24,17 @@ pub(super) fn base_type(o: &Object) -> &str {
     if o.object_type != ObjectType::Object {
         return "QAbstractItemModel";
     }
+
     "QObject"
 }
 
 pub(super) fn model_is_writable(o: &Object) -> bool {
     let mut write = false;
+
     for p in o.item_properties.values() {
         write |= p.write;
     }
+
     write
 }
 
@@ -40,6 +44,7 @@ pub(super) fn initialize_members_zero(w: &mut Vec<u8>, o: &Object) -> Result<()>
             writeln!(w, "    m_{}(new {}(false, this)),", name, p.type_name())?;
         }
     }
+
     Ok(())
 }
 
@@ -62,6 +67,7 @@ pub(super) fn initialize_members(
             initialize_members(w, &format!("m_{}->", name), object, conf)?;
         }
     }
+
     Ok(())
 }
 
@@ -71,6 +77,7 @@ pub(super) fn connect(w: &mut Vec<u8>, d: &str, o: &Object, conf: &Config) -> Re
             connect(w, &format!("{}->m_{}", d, name), object, conf)?;
         }
     }
+
     if o.object_type != ObjectType::Object {
         writeln!(
             w,
@@ -80,17 +87,24 @@ pub(super) fn connect(w: &mut Vec<u8>, d: &str, o: &Object, conf: &Config) -> Re
             d, o.name
         )?;
     }
+
     Ok(())
 }
 
 pub(super) fn role_name(role: &str) -> String {
     match role {
         "display" => "DisplayRole".into(),
+
         "decoration" => "DecorationRole".into(),
+
         "edit" => "EditRole".into(),
+
         "toolTip" => "ToolTipRole".into(),
+
         "statustip" => "StatusTipRole".into(),
+
         "whatsthis" => "WhatsThisRole".into(),
+
         _ => panic!("Unknown role {}", role),
     }
 }
@@ -108,13 +122,17 @@ fn write_function_c_decl(
     o: &Object,
 ) -> Result<()> {
     let lc = snake_case(name);
+
     write!(w, "    ")?;
+
     if f.return_type.is_complex() {
         write!(w, "void")?;
     } else {
         write!(w, "{}", f.type_name())?;
     }
+
     let name = format!("{}_{}", lcname, lc);
+
     write!(
         w,
         " {}({}{}::Private*",
@@ -134,6 +152,7 @@ fn write_function_c_decl(
             write!(w, ", {}", a.type_name())?;
         }
     }
+
     // If the return type is QString or QByteArray, append a pointer to the
     // variable that will be set to the argument list. Also add a setter
     // function.
@@ -142,15 +161,21 @@ fn write_function_c_decl(
     } else if f.return_type.name() == "QByteArray" {
         write!(w, ", QByteArray*, qbytearray_set")?;
     }
+
     writeln!(w, ");")?;
+
     Ok(())
 }
 
 pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     let lcname = snake_case(&o.name);
+
     write!(w, "    {}::Private* {}_new(", o.name, lcname)?;
+
     constructor_args_decl(w, o, conf)?;
+
     writeln!(w, ");")?;
+
     writeln!(w, "    void {}_free({}::Private*);", lcname, o.name)?;
 
     for (name, p) in &o.properties {
@@ -189,19 +214,24 @@ pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) ->
                 o.name
             )?;
         }
+
         if p.write {
             let mut t = p.property_type.c_set_type();
+
             if t == "qstring_t" {
                 t = "const ushort *str, int len";
             } else if t == "qbytearray_t" {
                 t = "const char* bytes, int len";
             }
+
             writeln!(w, "    void {}_set({}::Private*, {});", base, o.name, t)?;
+
             if p.optional {
                 writeln!(w, "    void {}_set_none({}::Private*);", base, o.name)?;
             }
         }
     }
+
     for f in &o.functions {
         write_function_c_decl(w, f, &lcname, o)?;
     }
@@ -210,6 +240,7 @@ pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) ->
 
 fn constructor_args_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     write!(w, "{}*", o.name)?;
+
     for p in o.properties.values() {
         if let Type::Object(object) = &p.property_type {
             write!(w, ", ")?;
@@ -218,6 +249,7 @@ fn constructor_args_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
             write!(w, ", void (*)({}*)", o.name)?;
         }
     }
+
     if o.object_type == ObjectType::List {
         write!(
             w,
@@ -237,6 +269,7 @@ fn constructor_args_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
             o.name
         )?;
     }
+
     if o.object_type == ObjectType::Tree {
         write!(
             w,
@@ -256,6 +289,7 @@ fn constructor_args_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
             o.name
         )?;
     }
+
     Ok(())
 }
 
