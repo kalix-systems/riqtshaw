@@ -37,6 +37,7 @@ impl ConfigPrivate for Config {
         }
         ops
     }
+
     fn optional_types(&self) -> BTreeSet<String> {
         let mut ops = BTreeSet::new();
         for o in self.objects.values() {
@@ -56,6 +57,7 @@ impl ConfigPrivate for Config {
         }
         ops
     }
+
     fn has_list_or_tree(&self) -> bool {
         self.objects
             .values()
@@ -97,9 +99,11 @@ impl PropertyPrivate for Property {
     fn is_object(&self) -> bool {
         self.property_type.is_object()
     }
+
     fn is_complex(&self) -> bool {
         self.property_type.is_complex()
     }
+
     fn c_get_type(&self) -> String {
         let name = self.property_type.name();
         name.to_string() + "*, " + &name.to_lowercase() + "_set"
@@ -162,6 +166,7 @@ impl SimpleTypePrivate for SimpleType {
             SimpleType::QUint64 => "quint64",
         }
     }
+
     fn cpp_set_type(&self) -> &str {
         match self {
             SimpleType::QString => "const QString&",
@@ -169,6 +174,7 @@ impl SimpleTypePrivate for SimpleType {
             _ => self.name(),
         }
     }
+
     fn c_set_type(&self) -> &str {
         match self {
             SimpleType::QString => "qstring_t",
@@ -176,6 +182,7 @@ impl SimpleTypePrivate for SimpleType {
             _ => self.name(),
         }
     }
+
     fn rust_type(&self) -> &str {
         match self {
             SimpleType::QString => "String",
@@ -194,6 +201,7 @@ impl SimpleTypePrivate for SimpleType {
             SimpleType::QUint64 => "u64",
         }
     }
+
     fn rust_type_init(&self) -> &str {
         match self {
             SimpleType::QString => "String::new()",
@@ -204,6 +212,7 @@ impl SimpleTypePrivate for SimpleType {
             _ => "0",
         }
     }
+
     fn is_complex(&self) -> bool {
         self == &SimpleType::QString || self == &SimpleType::QByteArray
     }
