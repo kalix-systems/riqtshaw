@@ -21,20 +21,25 @@ pub struct Config {
 impl ConfigPrivate for Config {
     fn types(&self) -> BTreeSet<String> {
         let mut ops = BTreeSet::new();
-        for o in self.objects.values() {
-            for p in o.properties.values() {
+
+        for object in self.objects.values() {
+            for p in object.properties.values() {
                 ops.insert(p.type_name().into());
             }
-            for p in o.item_properties.values() {
+
+            for p in object.item_properties.values() {
                 ops.insert(p.type_name().into());
             }
-            for f in o.functions.values() {
+
+            for f in object.functions.values() {
                 ops.insert(f.return_type.name().into());
+
                 for a in &f.arguments {
                     ops.insert(a.type_name().into());
                 }
             }
         }
+
         ops
     }
 
@@ -78,6 +83,7 @@ impl ObjectPrivate for Object {
     fn contains_object(&self) -> bool {
         self.properties.values().any(|p| p.is_object())
     }
+
     fn column_count(&self) -> usize {
         let mut column_count = 1;
         for ip in self.item_properties.values() {
@@ -231,36 +237,42 @@ impl TypePrivate for Type {
             _ => false,
         }
     }
+
     fn is_complex(&self) -> bool {
         match self {
             Type::Simple(simple) => simple.is_complex(),
             _ => false,
         }
     }
+
     fn name(&self) -> &str {
         match self {
             Type::Simple(s) => s.name(),
             Type::Object(o) => &o.name,
         }
     }
+
     fn cpp_set_type(&self) -> &str {
         match self {
             Type::Simple(s) => s.cpp_set_type(),
             Type::Object(o) => &o.name,
         }
     }
+
     fn c_set_type(&self) -> &str {
         match self {
             Type::Simple(s) => s.c_set_type(),
             Type::Object(o) => &o.name,
         }
     }
+
     fn rust_type(&self) -> &str {
         match self {
             Type::Simple(s) => s.rust_type(),
             Type::Object(o) => &o.name,
         }
     }
+
     fn rust_type_init(&self) -> &str {
         match self {
             Type::Simple(s) => s.rust_type_init(),
@@ -288,13 +300,17 @@ impl ItemPropertyPrivate for ItemProperty {
     fn is_complex(&self) -> bool {
         self.item_property_type.is_complex()
     }
+
     fn cpp_set_type(&self) -> String {
-        let t = self.item_property_type.cpp_set_type().to_string();
+        let typ = self.item_property_type.cpp_set_type().to_string();
+
         if self.optional {
-            return "option_".to_string() + &t;
+            return "option_".to_string() + &typ;
         }
-        t
+
+        typ
     }
+
     fn c_get_type(&self) -> String {
         let name = self.item_property_type.name();
         name.to_string() + "*, " + &name.to_lowercase() + "_set"
