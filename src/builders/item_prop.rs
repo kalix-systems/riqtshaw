@@ -3,7 +3,6 @@ use crate::configuration::*;
 pub struct ItemProp {
     item_property_type: SimpleType,
     optional: bool,
-    class_name: String,
     roles: Vec<Vec<String>>,
     rust_by_value: bool,
     write: bool,
@@ -15,7 +14,6 @@ impl ItemProp {
             optional: false,
             rust_by_value: false,
             write: false,
-            class_name: String::from(""),
             roles: vec![vec![]],
             item_property_type,
         }
@@ -39,7 +37,6 @@ impl ItemProp {
     pub fn build(self) -> ItemProperty {
         let ItemProp {
             item_property_type,
-            class_name,
             rust_by_value,
             optional,
             write,
@@ -48,9 +45,9 @@ impl ItemProp {
 
         ItemProperty {
             optional,
-            class_name,
             rust_by_value,
             write,
+            class_name: String::from(""),
             item_property_type,
             roles,
         }

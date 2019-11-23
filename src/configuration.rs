@@ -145,7 +145,7 @@ pub enum SimpleType {
     QUint16,
     QUint32,
     QUint64,
-    QObject,
+    QObject(String),
 }
 
 impl SimpleTypePrivate for SimpleType {
@@ -165,7 +165,7 @@ impl SimpleTypePrivate for SimpleType {
             SimpleType::QUint16 => "quint16",
             SimpleType::QUint32 => "quint32",
             SimpleType::QUint64 => "quint64",
-            SimpleType::QObject => "",
+            SimpleType::QObject(name) => name,
         }
     }
 
@@ -201,7 +201,7 @@ impl SimpleTypePrivate for SimpleType {
             SimpleType::QUint16 => "u16",
             SimpleType::QUint32 => "u32",
             SimpleType::QUint64 => "u64",
-            SimpleType::QObject => "",
+            SimpleType::QObject(name) => name,
         }
     }
 
@@ -284,13 +284,7 @@ pub struct ItemProperty {
 
 impl TypeName for ItemProperty {
     fn type_name(&self) -> &str {
-        match self.item_property_type {
-            SimpleType::QObject => {
-                assert!(self.class_name.len() > 0, "class name was empty");
-                &self.class_name
-            }
-            _ => self.item_property_type.name(),
-        }
+        self.item_property_type.name()
     }
 }
 
