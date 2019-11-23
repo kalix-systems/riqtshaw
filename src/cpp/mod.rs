@@ -36,6 +36,8 @@ pub fn write_header(conf: &Config) -> Result<()> {
 
     for name in conf.objects.keys() {
         writeln!(h, "class {name};", name = name)?;
+        writeln!(h, "typedef {name}* {name}Ref;", name = name)?;
+        writeln!(h, "Q_DECLARE_METATYPE({name}Ref); \n", name = name)?;
     }
 
     for object in conf.objects.values() {
