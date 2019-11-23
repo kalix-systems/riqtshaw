@@ -2,10 +2,11 @@ use super::*;
 
 pub(super) fn write_rust_interface_object(
     r: &mut Vec<u8>,
-    o: &Object,
+    object: &Object,
     conf: &Config,
 ) -> Result<()> {
-    let lcname = snake_case(&o.name);
+    let lcname = snake_case(&object.name);
+
     writeln!(
         r,
         "
@@ -13,28 +14,32 @@ pub struct {}QObject {{}}
 
 pub struct {0}Emitter {{
     qobject: Arc<AtomicPtr<{0}QObject>>,",
-        o.name
+        object.name
     )?;
-    for (name, p) in &o.properties {
+
+    for (name, p) in object.properties.iter() {
         if p.is_object() {
             continue;
         }
+
         writeln!(
             r,
             "    {}_changed: fn(*mut {}QObject),",
             snake_case(name),
-            o.name
+            object.name
         )?;
     }
-    if o.object_type == ObjectType::List {
-        writeln!(r, "    new_data_ready: fn(*mut {}QObject),", o.name)?;
-    } else if o.object_type == ObjectType::Tree {
+
+    if object.object_type == ObjectType::List {
+        writeln!(r, "    new_data_ready: fn(*mut {}QObject),", object.name)?;
+    } else if object.object_type == ObjectType::Tree {
         writeln!(
             r,
             "    new_data_ready: fn(*mut {}QObject, index: COption<usize>),",
-            o.name
+            object.name
         )?;
     }
+
     writeln!(
         r,
         "}}
@@ -49,21 +54,26 @@ impl {0}Emitter {{
     pub fn clone(&mut self) -> {0}Emitter {{
         {0}Emitter {{
             qobject: self.qobject.clone(),",
-        o.name
+        object.name
     )?;
-    for (name, p) in &o.properties {
-        if p.is_object() {
-            continue;
-        }
+
+    for name in object
+        .properties
+        .iter()
+        .filter(|(_, property)| !property.is_object())
+        .map(|(name, _)| name)
+    {
         writeln!(
             r,
             "            {}_changed: self.{0}_changed,",
             snake_case(name),
         )?;
     }
-    if o.object_type != ObjectType::Object {
+
+    if object.object_type != ObjectType::Object {
         writeln!(r, "            new_data_ready: self.new_data_ready,")?;
     }
+
     writeln!(
         r,
         "        }}
@@ -72,13 +82,14 @@ impl {0}Emitter {{
         let n: *const {0}QObject = null();
         self.qobject.store(n as *mut {0}QObject, Ordering::SeqCst);
     }}",
-        o.name
+        object.name
     )?;
 
-    for (name, p) in &o.properties {
+    for (name, p) in &object.properties {
         if p.is_object() {
             continue;
         }
+
         writeln!(
             r,
             "    pub fn {}_changed(&mut self) {{
@@ -91,7 +102,7 @@ impl {0}Emitter {{
         )?;
     }
 
-    if o.object_type == ObjectType::List {
+    if object.object_type == ObjectType::List {
         writeln!(
             r,
             "    pub fn new_data_ready(&mut self) {{
@@ -101,7 +112,7 @@ impl {0}Emitter {{
         }}
     }}"
         )?;
-    } else if o.object_type == ObjectType::Tree {
+    } else if object.object_type == ObjectType::Tree {
         writeln!(
             r,
             "    pub fn new_data_ready(&mut self, item: Option<usize>) {{
@@ -114,20 +125,21 @@ impl {0}Emitter {{
     }
 
     let mut model_struct = String::new();
-    if o.object_type != ObjectType::Object {
-        let type_ = if o.object_type == ObjectType::List {
+
+    if object.object_type != ObjectType::Object {
+        let type_ = if object.object_type == ObjectType::List {
             "List"
         } else {
             "Tree"
         };
-        model_struct = format!(", model: {}{}", o.name, type_);
+        model_struct = format!(", model: {}{}", object.name, type_);
         let mut index = "";
         let mut index_decl = "";
         let mut index_c_decl = "";
         let mut dest = "";
         let mut dest_decl = "";
         let mut dest_c_decl = "";
-        if o.object_type == ObjectType::Tree {
+        if object.object_type == ObjectType::Tree {
             index_decl = " index: Option<usize>,";
             index_c_decl = " index: COption<usize>,";
             index = " index.into(),";
@@ -189,7 +201,7 @@ impl {0}{1} {{
     pub fn end_remove_rows(&mut self) {{
         (self.end_remove_rows)(self.qobject);
     }}",
-            o.name, type_, index_decl, index, index_c_decl, dest_decl, dest, dest_c_decl
+            object.name, type_, index_decl, index, index_c_decl, dest_decl, dest, dest_c_decl
         )?;
     }
 
@@ -199,9 +211,10 @@ impl {0}{1} {{
 
 pub trait {}Trait {{
     fn new(emit: {0}Emitter{}",
-        o.name, model_struct
+        object.name, model_struct
     )?;
-    for (name, p) in &o.properties {
+
+    for (name, p) in &object.properties {
         if p.is_object() {
             write!(r, ",\n        {}: {}", snake_case(name), p.type_name())?;
         }
@@ -210,42 +223,56 @@ pub trait {}Trait {{
         r,
         ") -> Self;
     fn emit(&mut self) -> &mut {}Emitter;",
-        o.name
+        object.name
     )?;
-    for (name, p) in &o.properties {
+
+    for (name, property) in &object.properties {
         let lc = snake_case(name).to_lowercase();
-        if p.is_object() {
-            writeln!(r, "    fn {}(&self) -> &{};", lc, rust_type(p))?;
-            writeln!(r, "    fn {}_mut(&mut self) -> &mut {};", lc, rust_type(p))?;
+
+        if property.is_object() {
+            writeln!(r, "    fn {}(&self) -> &{};", lc, rust_type(property))?;
+            writeln!(
+                r,
+                "    fn {}_mut(&mut self) -> &mut {};",
+                lc,
+                rust_type(property)
+            )?;
         } else {
-            if p.rust_by_function {
+            if property.rust_by_function {
                 write!(
                     r,
                     "    fn {}<F>(&self, getter: F) where F: FnOnce({});",
                     lc,
-                    rust_return_type(p)
+                    rust_return_type(property)
                 )?;
             } else {
-                writeln!(r, "    fn {}(&self) -> {};", lc, rust_return_type(p))?;
+                writeln!(r, "    fn {}(&self) -> {};", lc, rust_return_type(property))?;
             }
-            if p.write {
-                if p.type_name() == "QByteArray" {
-                    if p.optional {
+
+            if property.write {
+                if property.type_name() == "QByteArray" {
+                    if property.optional {
                         writeln!(r, "    fn set_{}(&mut self, value: Option<&[u8]>);", lc)?;
                     } else {
                         writeln!(r, "    fn set_{}(&mut self, value: &[u8]);", lc)?;
                     }
                 } else {
-                    writeln!(r, "    fn set_{}(&mut self, value: {});", lc, rust_type(p))?;
+                    writeln!(
+                        r,
+                        "    fn set_{}(&mut self, value: {});",
+                        lc,
+                        rust_type(property)
+                    )?;
                 }
             }
         }
     }
-    for (name, f) in &o.functions {
+
+    for (name, f) in &object.functions {
         let lc = snake_case(name);
         let mut arg_list = String::new();
         if !f.arguments.is_empty() {
-            for a in &f.arguments {
+            for a in f.arguments.iter() {
                 let t = if a.argument_type.name() == "QByteArray" {
                     "&[u8]"
                 } else {
@@ -263,7 +290,8 @@ pub trait {}Trait {{
             f.return_type.rust_type()
         )?;
     }
-    if o.object_type == ObjectType::List {
+
+    if object.object_type == ObjectType::List {
         writeln!(
             r,
             "    fn row_count(&self) -> usize;
@@ -275,7 +303,7 @@ pub trait {}Trait {{
     fn fetch_more(&mut self) {{}}
     fn sort(&mut self, _: u8, _: SortOrder) {{}}"
         )?;
-    } else if o.object_type == ObjectType::Tree {
+    } else if object.object_type == ObjectType::Tree {
         writeln!(
             r,
             "    fn row_count(&self, _: Option<usize>) -> usize;
@@ -290,8 +318,9 @@ pub trait {}Trait {{
     fn row(&self, index: usize) -> usize;"
         )?;
     }
-    if o.object_type != ObjectType::Object {
-        for (name, ip) in &o.item_properties {
+
+    if object.object_type != ObjectType::Object {
+        for (name, ip) in &object.item_properties {
             let name = snake_case(name);
             writeln!(
                 r,
@@ -325,6 +354,7 @@ pub trait {}Trait {{
             }
         }
     }
+
     writeln!(
         r,
         "}}
@@ -333,9 +363,9 @@ pub trait {}Trait {{
 pub extern \"C\" fn {}_new(",
         lcname
     )?;
-    r_constructor_args_decl(r, &lcname, o, conf)?;
-    writeln!(r, ",\n) -> *mut {} {{", o.name)?;
-    r_constructor_args(r, &lcname, o, conf)?;
+    r_constructor_args_decl(r, &lcname, object, conf)?;
+    writeln!(r, ",\n) -> *mut {} {{", object.name)?;
+    r_constructor_args(r, &lcname, object, conf)?;
     writeln!(
         r,
         "    Box::into_raw(Box::new(d_{}))
@@ -345,10 +375,10 @@ pub extern \"C\" fn {}_new(",
 pub unsafe extern \"C\" fn {0}_free(ptr: *mut {}) {{
     Box::from_raw(ptr).emit().clear();
 }}",
-        lcname, o.name
+        lcname, object.name
     )?;
 
-    for (name, p) in &o.properties {
+    for (name, p) in &object.properties {
         let base = format!("{}_{}", lcname, snake_case(name));
         if p.is_object() {
             writeln!(
@@ -359,7 +389,7 @@ pub unsafe extern \"C\" fn {}_get(ptr: *mut {}) -> *mut {} {{
     (&mut *ptr).{}_mut()
 }}",
                 base,
-                o.name,
+                object.name,
                 rust_type(p),
                 snake_case(name)
             )?;
@@ -381,7 +411,7 @@ pub unsafe extern \"C\" fn {}_get(
     }});
 }}",
                     base,
-                    o.name,
+                    object.name,
                     p.type_name(),
                     snake_case(name)
                 )?;
@@ -401,7 +431,7 @@ pub unsafe extern \"C\" fn {}_get(
     set(p, s, to_c_int(v.len()));
 }}",
                     base,
-                    o.name,
+                    object.name,
                     p.type_name(),
                     snake_case(name)
                 )?;
@@ -418,7 +448,7 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_ushort, len: c_int) 
     o.set_{}(s);
 }}",
                     base,
-                    o.name,
+                    object.name,
                     snake_case(name)
                 )?;
             } else if p.write {
@@ -433,7 +463,7 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_char, len: c_int) {{
     o.set_{}(v);
 }}",
                     base,
-                    o.name,
+                    object.name,
                     snake_case(name)
                 )?;
             }
@@ -455,7 +485,7 @@ pub unsafe extern \"C\" fn {}_get(
     }}
 }}",
                 base,
-                o.name,
+                object.name,
                 p.type_name(),
                 snake_case(name)
             )?;
@@ -471,7 +501,7 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_ushort, len: c_int) 
     o.set_{}(Some(s));
 }}",
                     base,
-                    o.name,
+                    object.name,
                     snake_case(name)
                 )?;
             } else if p.write {
@@ -485,7 +515,7 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: *const c_char, len: c_int) {{
     o.set_{}(Some(v.into()));
 }}",
                     base,
-                    o.name,
+                    object.name,
                     snake_case(name)
                 )?;
             }
@@ -501,7 +531,7 @@ pub unsafe extern \"C\" fn {}_get(ptr: *const {}) -> COption<{}> {{
     }}
 }}",
                 base,
-                o.name,
+                object.name,
                 p.property_type.rust_type(),
                 snake_case(name)
             )?;
@@ -514,7 +544,7 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: {}) {{
     (&mut *ptr).set_{}(Some(v));
 }}",
                     base,
-                    o.name,
+                    object.name,
                     p.property_type.rust_type(),
                     snake_case(name)
                 )?;
@@ -528,7 +558,7 @@ pub unsafe extern \"C\" fn {}_get(ptr: *const {}) -> {} {{
     (&*ptr).{}()
 }}",
                 base,
-                o.name,
+                object.name,
                 rust_type(p),
                 snake_case(name)
             )?;
@@ -541,7 +571,7 @@ pub unsafe extern \"C\" fn {}_set(ptr: *mut {}, v: {}) {{
     (&mut *ptr).set_{}(v);
 }}",
                     base,
-                    o.name,
+                    object.name,
                     rust_type(p),
                     snake_case(name)
                 )?;
@@ -557,15 +587,16 @@ pub unsafe extern \"C\" fn {}_set_none(ptr: *mut {}) {{
     o.set_{}(None);
 }}",
                 base,
-                o.name,
+                object.name,
                 snake_case(name)
             )?;
         }
     }
-    for f in &o.functions {
-        write_function(r, f, &lcname, o)?;
+    for f in &object.functions {
+        write_function(r, f, &lcname, object)?;
     }
-    if o.object_type == ObjectType::List {
+
+    if object.object_type == ObjectType::List {
         writeln!(
             r,
             "
@@ -612,9 +643,9 @@ pub unsafe extern \"C\" fn {1}_sort(
 ) {{
     (&mut *ptr).sort(column, order)
 }}",
-            o.name, lcname
+            object.name, lcname
         )?;
-    } else if o.object_type == ObjectType::Tree {
+    } else if object.object_type == ObjectType::Tree {
         writeln!(
             r,
             "
@@ -687,16 +718,16 @@ pub unsafe extern \"C\" fn {1}_parent(ptr: *const {0}, index: usize) -> QModelIn
 pub unsafe extern \"C\" fn {1}_row(ptr: *const {0}, index: usize) -> c_int {{
     to_c_int((&*ptr).row(index))
 }}",
-            o.name, lcname
+            object.name, lcname
         )?;
     }
-    if o.object_type != ObjectType::Object {
-        let (index_decl, index) = if o.object_type == ObjectType::Tree {
+    if object.object_type != ObjectType::Object {
+        let (index_decl, index) = if object.object_type == ObjectType::Tree {
             (", index: usize", "index")
         } else {
             (", row: c_int", "to_usize(row).unwrap_or(0)")
         };
-        for (name, ip) in &o.item_properties {
+        for (name, ip) in &object.item_properties {
             if ip.is_complex() && !ip.optional {
                 writeln!(
                     r,
@@ -714,7 +745,7 @@ pub unsafe extern \"C\" fn {}_data_{}(
 }}",
                     lcname,
                     snake_case(name),
-                    o.name,
+                    object.name,
                     index_decl,
                     ip.type_name(),
                     index
@@ -738,7 +769,7 @@ pub unsafe extern \"C\" fn {}_data_{}(
 }}",
                     lcname,
                     snake_case(name),
-                    o.name,
+                    object.name,
                     index_decl,
                     ip.type_name(),
                     index
@@ -754,7 +785,7 @@ pub unsafe extern \"C\" fn {}_data_{}(ptr: *const {}{}) -> {} {{
 }}",
                     lcname,
                     snake_case(name),
-                    o.name,
+                    object.name,
                     index_decl,
                     rust_c_type(ip),
                     index,
@@ -779,7 +810,7 @@ pub unsafe extern \"C\" fn {}_set_data_{}(
 }}",
                         lcname,
                         snake_case(name),
-                        o.name,
+                        object.name,
                         index_decl,
                         index,
                         val
@@ -799,7 +830,7 @@ pub unsafe extern \"C\" fn {}_set_data_{}(
 }}",
                         lcname,
                         snake_case(name),
-                        o.name,
+                        object.name,
                         index_decl,
                         index,
                         if ip.optional { "Some(slice)" } else { "slice" }
@@ -818,7 +849,7 @@ pub unsafe extern \"C\" fn {}_set_data_{}(
 }}",
                         lcname,
                         snake_case(name),
-                        o.name,
+                        object.name,
                         index_decl,
                         type_,
                         index,
@@ -836,7 +867,7 @@ pub unsafe extern \"C\" fn {}_set_data_{}_none(ptr: *mut {}{}) -> bool {{
 }}",
                     lcname,
                     snake_case(name),
-                    o.name,
+                    object.name,
                     index_decl,
                     index
                 )?;

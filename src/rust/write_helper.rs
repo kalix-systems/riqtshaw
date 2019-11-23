@@ -152,81 +152,85 @@ pub(super) fn r_constructor_args(
 
 pub(super) fn write_function(
     r: &mut Vec<u8>,
-    (name, f): (&String, &Function),
+    (name, func): (&String, &Function),
     lcname: &str,
-    o: &Object,
+    object: &Object,
 ) -> Result<()> {
-    let lc = snake_case(name);
+    let lower_case = snake_case(name);
     write!(
         r,
         "
 #[no_mangle]
-pub unsafe extern \"C\" fn {}_{}(ptr: *{} {}",
-        lcname,
-        lc,
-        if f.mutable { "mut" } else { "const" },
-        o.name
+pub unsafe extern \"C\" fn {lcname}_{lower_case}(ptr: *{is_mut} {object_name}",
+        lcname = lcname,
+        lower_case = lower_case,
+        is_mut = if func.mutable { "mut" } else { "const" },
+        object_name = object.name
     )?;
 
     // write all the input arguments, for QString and QByteArray, write
     // pointers to their content and the length which is int in Qt
-    for a in &f.arguments {
+    for arg in func.arguments.iter() {
         write!(r, ", ")?;
-        if a.argument_type.name() == "QString" {
-            write!(r, "{}_str: *const c_ushort, {0}_len: c_int", a.name)?;
-        } else if a.argument_type.name() == "QByteArray" {
-            write!(r, "{}_str: *const c_char, {0}_len: c_int", a.name)?;
+        if arg.argument_type.name() == "QString" {
+            write!(r, "{}_str: *const c_ushort, {0}_len: c_int", arg.name)?;
+        } else if arg.argument_type.name() == "QByteArray" {
+            write!(r, "{}_str: *const c_char, {0}_len: c_int", arg.name)?;
         } else {
-            write!(r, "{}: {}", a.name, a.argument_type.rust_type())?;
+            write!(r, "{}: {}", arg.name, arg.argument_type.rust_type())?;
         }
     }
 
     // If the return type is QString or QByteArray, append a pointer to the
     // variable that will be set to the argument list. Also add a setter
     // function.
-    if f.return_type.is_complex() {
+    if func.return_type.is_complex() {
         writeln!(
             r,
             ", d: *mut {}, set: fn(*mut {0}, str: *const c_char, len: c_int)) {{",
-            f.return_type.name()
+            func.return_type.name()
         )?;
-    } else if f.return_type == SimpleType::Void {
+    } else if func.return_type == SimpleType::Void {
         writeln!(r, ") {{")?;
     } else {
-        writeln!(r, ") -> {} {{", f.return_type.rust_type())?;
+        writeln!(r, ") -> {} {{", func.return_type.rust_type())?;
     }
 
-    for a in &f.arguments {
-        if a.argument_type.name() == "QString" {
+    for arg in &func.arguments {
+        if arg.argument_type.name() == "QString" {
             writeln!(
                 r,
                 "    let mut {} = String::new();
     set_string_from_utf16(&mut {0}, {0}_str, {0}_len);",
-                a.name
+                arg.name
             )?;
-        } else if a.argument_type.name() == "QByteArray" {
-            writeln!(r, "let {} = {{ qba_slice!({0}_str, {0}_len) }};", a.name)?;
+        } else if arg.argument_type.name() == "QByteArray" {
+            writeln!(r, "let {} = {{ qba_slice!({0}_str, {0}_len) }};", arg.name)?;
         }
     }
 
-    if f.mutable {
+    if func.mutable {
         writeln!(r, "    let o = &mut *ptr;")?;
     } else {
         writeln!(r, "    let o = &*ptr;")?;
     }
-    if f.return_type.is_complex() {
-        write!(r, "    let r = o.{}(", lc)?;
+
+    if func.return_type.is_complex() {
+        write!(r, "    let r = o.{}(", lower_case)?;
     } else {
-        write!(r, "    o.{}(", lc)?;
+        write!(r, "    o.{}(", lower_case)?;
     }
-    for (i, a) in f.arguments.iter().enumerate() {
+
+    for (i, a) in func.arguments.iter().enumerate() {
         if i > 0 {
             write!(r, ", ")?;
         }
         write!(r, "{}", a.name)?;
     }
+
     write!(r, ")")?;
-    if f.return_type.is_complex() {
+
+    if func.return_type.is_complex() {
         writeln!(r, ";")?;
         writeln!(
             r,
@@ -237,164 +241,4 @@ pub unsafe extern \"C\" fn {}_{}(ptr: *{} {}",
         writeln!(r)?;
     }
     writeln!(r, "}}")
-}
-
-pub(super) fn write_rust_types(conf: &Config, r: &mut Vec<u8>) -> Result<()> {
-    let mut has_option = false;
-    let mut has_string = false;
-    let mut has_byte_array = false;
-    let mut has_list_or_tree = false;
-
-    for o in conf.objects.values() {
-        has_list_or_tree |= o.object_type != ObjectType::Object;
-        for p in o.properties.values() {
-            has_option |= p.optional;
-            has_string |= p.property_type == Type::Simple(SimpleType::QString);
-            has_byte_array |= p.property_type == Type::Simple(SimpleType::QByteArray);
-        }
-        for p in o.item_properties.values() {
-            has_option |= p.optional;
-            has_string |= p.item_property_type == SimpleType::QString;
-            has_byte_array |= p.item_property_type == SimpleType::QByteArray;
-        }
-        for f in o.functions.values() {
-            has_string |= f.return_type == SimpleType::QString;
-            has_byte_array |= f.return_type == SimpleType::QByteArray;
-            for a in &f.arguments {
-                has_string |= a.argument_type == SimpleType::QString;
-                has_byte_array |= a.argument_type == SimpleType::QByteArray;
-            }
-        }
-    }
-
-    if has_byte_array {
-        writeln!(
-            r,
-            "
-
-macro_rules! qba_slice {{
-    ($qba: expr, $qba_len: expr) => {{
-        match (to_usize($qba_len), $qba.is_null()) {{
-            (Some(len), false) => ::std::slice::from_raw_parts($qba as *const u8, len),
-            _ => &[],
-        }}
-    }}
-}}
-
-       "
-        )?;
-    }
-
-    if has_option || has_list_or_tree {
-        writeln!(
-            r,
-            "
-
-#[repr(C)]
-pub struct COption<T> {{
-    data: T,
-    some: bool,
-}}
-
-impl<T> COption<T> {{
-    #![allow(dead_code)]
-    fn into(self) -> Option<T> {{
-        if self.some {{
-            Some(self.data)
-        }} else {{
-            None
-        }}
-    }}
-}}
-
-impl<T> From<Option<T>> for COption<T>
-where
-    T: Default,
-{{
-    fn from(t: Option<T>) -> COption<T> {{
-        if let Some(v) = t {{
-            COption {{
-                data: v,
-                some: true,
-            }}
-        }} else {{
-            COption {{
-                data: T::default(),
-                some: false,
-            }}
-        }}
-    }}
-}}"
-        )?;
-    }
-    if has_string {
-        writeln!(
-            r,
-            "
-
-pub enum QString {{}}
-
-fn set_string_from_utf16(s: &mut String, str: *const c_ushort, len: c_int) {{
-    let utf16 = unsafe {{
-        match to_usize(len) {{
-            Some(len) => ::std::slice::from_raw_parts(str, len),
-            None => &[],
-        }}
-    }};
-    let characters = decode_utf16(utf16.iter().cloned())
-        .map(|r| r.unwrap());
-    s.clear();
-    s.extend(characters);
-}}
-"
-        )?;
-    }
-    if has_byte_array {
-        writeln!(
-            r,
-            "
-
-pub enum QByteArray {{}}"
-        )?;
-    }
-    if has_list_or_tree {
-        writeln!(
-            r,
-            "
-
-#[repr(C)]
-#[derive(PartialEq, Eq, Debug)]
-pub enum SortOrder {{
-    Ascending = 0,
-    Descending = 1,
-}}
-
-#[repr(C)]
-pub struct QModelIndex {{
-    row: c_int,
-    internal_id: usize,
-}}"
-        )?;
-    }
-
-    if has_string || has_byte_array || has_list_or_tree {
-        writeln!(
-            r,
-            "
-
-fn to_usize(n: c_int) -> Option<usize> {{
-    use std::convert::TryInto;
-
-    n.try_into().ok()
-}}
-
-fn to_c_int(n: usize) -> c_int {{
-    // saturate
-    n.min(c_int::max_value() as usize) as c_int
-}}
-"
-        )?;
-    }
-
-    Ok(())
 }
