@@ -1149,122 +1149,19 @@ fn constructor_args(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) ->
     if o.object_type == ObjectType::List {
         writeln!(
             w,
-            ",
-        [](const {0}* o) {{
-            Q_EMIT o->newDataReady(QModelIndex());
-        }},
-        []({0}* o) {{
-            Q_EMIT o->layoutAboutToBeChanged();
-        }},
-        []({0}* o) {{
-            o->updatePersistentIndexes();
-            Q_EMIT o->layoutChanged();
-        }},
-        []({0}* o, quintptr first, quintptr last) {{
-            o->dataChanged(o->createIndex(first, 0, first),
-                       o->createIndex(last, {1}, last));
-        }},
-        []({0}* o) {{
-            o->beginResetModel();
-        }},
-        []({0}* o) {{
-            o->endResetModel();
-        }},
-        []({0}* o, int first, int last) {{
-            o->beginInsertRows(QModelIndex(), first, last);
-        }},
-        []({0}* o) {{
-            o->endInsertRows();
-        }},
-        []({0}* o, int first, int last, int destination) {{
-            o->beginMoveRows(QModelIndex(), first, last, QModelIndex(), destination);
-        }},
-        []({0}* o) {{
-            o->endMoveRows();
-        }},
-        []({0}* o, int first, int last) {{
-            o->beginRemoveRows(QModelIndex(), first, last);
-        }},
-        []({0}* o) {{
-            o->endRemoveRows();
-        }}",
-            o.name,
-            o.column_count() - 1
+            include_str!("cpp/list_constructor_lambdas.cpp_string"),
+            name = o.name,
+            col_count = o.column_count() - 1
         )?;
     }
 
     if o.object_type == ObjectType::Tree {
         writeln!(
             w,
-            ",
-        [](const {0}* o, option_quintptr id) {{
-            if (id.some) {{
-                int row = {1}_row(o->m_d, id.value);
-                Q_EMIT o->newDataReady(o->createIndex(row, 0, id.value));
-            }} else {{
-                Q_EMIT o->newDataReady(QModelIndex());
-            }}
-        }},
-        []({0}* o) {{
-            Q_EMIT o->layoutAboutToBeChanged();
-        }},
-        []({0}* o) {{
-            o->updatePersistentIndexes();
-            Q_EMIT o->layoutChanged();
-        }},
-        []({0}* o, quintptr first, quintptr last) {{
-            quintptr frow = {1}_row(o->m_d, first);
-            quintptr lrow = {1}_row(o->m_d, first);
-            o->dataChanged(o->createIndex(frow, 0, first),
-                       o->createIndex(lrow, {2}, last));
-        }},
-        []({0}* o) {{
-            o->beginResetModel();
-        }},
-        []({0}* o) {{
-            o->endResetModel();
-        }},
-        []({0}* o, option_quintptr id, int first, int last) {{
-            if (id.some) {{
-                int row = {1}_row(o->m_d, id.value);
-                o->beginInsertRows(o->createIndex(row, 0, id.value), first, last);
-            }} else {{
-                o->beginInsertRows(QModelIndex(), first, last);
-            }}
-        }},
-        []({0}* o) {{
-            o->endInsertRows();
-        }},
-        []({0}* o, option_quintptr sourceParent, int first, int last, option_quintptr destinationParent, int destination) {{
-            QModelIndex s;
-            if (sourceParent.some) {{
-                int row = {1}_row(o->m_d, sourceParent.value);
-                s = o->createIndex(row, 0, sourceParent.value);
-            }}
-            QModelIndex d;
-            if (destinationParent.some) {{
-                int row = {1}_row(o->m_d, destinationParent.value);
-                d = o->createIndex(row, 0, destinationParent.value);
-            }}
-            o->beginMoveRows(s, first, last, d, destination);
-        }},
-        []({0}* o) {{
-            o->endMoveRows();
-        }},
-        []({0}* o, option_quintptr id, int first, int last) {{
-            if (id.some) {{
-                int row = {1}_row(o->m_d, id.value);
-                o->beginRemoveRows(o->createIndex(row, 0, id.value), first, last);
-            }} else {{
-                o->beginRemoveRows(QModelIndex(), first, last);
-            }}
-        }},
-        []({0}* o) {{
-            o->endRemoveRows();
-        }}",
-            o.name,
-            lcname,
-            o.column_count() - 1
+            include_str!("cpp/tree_constructor_lambdas.cpp_string"),
+            name = o.name,
+            snake_case_class_name = lcname,
+            col_count = o.column_count() - 1
         )?;
     }
 

@@ -1,0 +1,39 @@
+            ",
+        [](const {name}* o) {{
+            Q_EMIT o->newDataReady(QModelIndex());
+        }},
+        []({name}* o) {{
+            Q_EMIT o->layoutAboutToBeChanged();
+        }},
+        []({name}* o) {{
+            o->updatePersistentIndexes();
+            Q_EMIT o->layoutChanged();
+        }},
+        []({0}* o, quintptr first, quintptr last) {{
+            o->dataChanged(o->createIndex(first, 0, first),
+                       o->createIndex(last, {col_count}, last));
+        }},
+        []({name}* o) {{
+            o->beginResetModel();
+        }},
+        []({name}* o) {{
+            o->endResetModel();
+        }},
+        []({name}* o, int first, int last) {{
+            o->beginInsertRows(QModelIndex(), first, last);
+        }},
+        []({name}* o) {{
+            o->endInsertRows();
+        }},
+        []({name}* o, int first, int last, int destination) {{
+            o->beginMoveRows(QModelIndex(), first, last, QModelIndex(), destination);
+        }},
+        []({name}* o) {{
+            o->endMoveRows();
+        }},
+        []({name}* o, int first, int last) {{
+            o->beginRemoveRows(QModelIndex(), first, last);
+        }},
+        []({name}* o) {{
+            o->endRemoveRows();
+        }}"

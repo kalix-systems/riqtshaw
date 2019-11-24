@@ -1,0 +1,66 @@
+  ",
+        [](const {name}* o, option_quintptr id) {{
+            if (id.some) {{
+                int row = {snake_case_class_name}_row(o->m_d, id.value);
+                Q_EMIT o->newDataReady(o->createIndex(row, 0, id.value));
+            }} else {{
+                Q_EMIT o->newDataReady(QModelIndex());
+            }}
+        }},
+        []({name}* o) {{
+            Q_EMIT o->layoutAboutToBeChanged();
+        }},
+        []({name}* o) {{
+            o->updatePersistentIndexes();
+            Q_EMIT o->layoutChanged();
+        }},
+        []({name}* o, quintptr first, quintptr last) {{
+            quintptr frow = {snake_case_class_name}_row(o->m_d, first);
+            quintptr lrow = {snake_case_class_name}_row(o->m_d, first);
+            o->dataChanged(o->createIndex(frow, 0, first),
+                       o->createIndex(lrow, {col_count}, last));
+        }},
+        []({name}* o) {{
+            o->beginResetModel();
+        }},
+        []({name}* o) {{
+            o->endResetModel();
+        }},
+        []({name}* o, option_quintptr id, int first, int last) {{
+            if (id.some) {{
+                int row = {snake_case_class_name}_row(o->m_d, id.value);
+                o->beginInsertRows(o->createIndex(row, 0, id.value), first, last);
+            }} else {{
+                o->beginInsertRows(QModelIndex(), first, last);
+            }}
+        }},
+        []({name}* o) {{
+            o->endInsertRows();
+        }},
+        []({name}* o, option_quintptr sourceParent, int first, int last, option_quintptr destinationParent, int destination) {{
+            QModelIndex s;
+            if (sourceParent.some) {{
+                int row = {snake_case_class_name}_row(o->m_d, sourceParent.value);
+                s = o->createIndex(row, 0, sourceParent.value);
+            }}
+            QModelIndex d;
+            if (destinationParent.some) {{
+                int row = {snake_case_class_name}_row(o->m_d, destinationParent.value);
+                d = o->createIndex(row, 0, destinationParent.value);
+            }}
+            o->beginMoveRows(s, first, last, d, destination);
+        }},
+        []({name}* o) {{
+            o->endMoveRows();
+        }},
+        []({name}* o, option_quintptr id, int first, int last) {{
+            if (id.some) {{
+                int row = {snake_case_class_name}_row(o->m_d, id.value);
+                o->beginRemoveRows(o->createIndex(row, 0, id.value), first, last);
+            }} else {{
+                o->beginRemoveRows(QModelIndex(), first, last);
+            }}
+        }},
+        []({name}* o) {{
+            o->endRemoveRows();
+        }}"
