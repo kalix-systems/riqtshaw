@@ -1,17 +1,6 @@
-#![allow(unused)]
 use super::*;
-use codegen::{Block, Formatter, Function as Func, Scope};
-use std::string::ToString;
 
-pub(super) fn push_new(scope: &mut Scope, object: &Object) {
-    let mut buf = String::new();
-    let mut fmt = Formatter::new(&mut buf);
-    new(object).fmt(false, &mut fmt).unwrap();
-
-    scope.raw(&buf);
-}
-
-fn new(object: &Object) -> Func {
+pub(super) fn new(object: &Object) -> Func {
     let name = snake_case(&object.name);
     let mut func = Func::new(&format!("{}_new", &name));
 
@@ -28,7 +17,7 @@ fn new(object: &Object) -> Func {
     func
 }
 
-fn new_args(object: &Object, name: &str, func: &mut Func) {
+pub(super) fn new_args(object: &Object, name: &str, func: &mut Func) {
     func.arg(&snake_case(name), format!("*mut {}", qobject(&object.name)));
 
     for (prop_name, prop) in object.properties.iter() {
@@ -174,7 +163,7 @@ fn new_args(object: &Object, name: &str, func: &mut Func) {
     }
 }
 
-fn new_ctor(object: &Object, name: &str, func: &mut Func) {
+pub(super) fn new_ctor(object: &Object, name: &str, func: &mut Func) {
     for (prop_name, prop) in object.properties.iter() {
         if let Type::Object(object) = &prop.property_type {
             new_ctor(object, prop_name, func);
@@ -230,13 +219,13 @@ fn new_ctor(object: &Object, name: &str, func: &mut Func) {
         }
     }
 
-    for (name, p) in object.object_properties() {
+    for (name, _) in object.object_properties() {
         func.line(format!(", d_{}", snake_case(name)));
     }
     func.line(");");
 }
 
-fn model(object: &Object, name: &str) -> Option<Block> {
+pub(super) fn model(object: &Object, name: &str) -> Option<Block> {
     // construct model
     let mut block = Block::new(&format!("let model = {}", model_name(object)?));
 

@@ -11,19 +11,9 @@ pub(super) fn write_rust_interface_object(r: &mut Vec<u8>, object: &Object) -> R
     push_model(&mut scope, object);
     push_trait(&mut scope, object);
     c_ffi::push_new(&mut scope, object);
+    c_ffi::push_clear(&mut scope, object);
 
     writeln!(r, "{}", scope.to_string())?;
-
-    writeln!(
-        r,
-        "
-#[no_mangle]
-pub unsafe extern \"C\" fn {lcname}_free(ptr: *mut {object_name}) {{
-    Box::from_raw(ptr).emit().clear();
-}}",
-        lcname = lcname,
-        object_name = object.name
-    )?;
 
     for (name, p) in &object.properties {
         let base = format!("{}_{}", lcname, snake_case(name));
