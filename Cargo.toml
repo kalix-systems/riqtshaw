@@ -1,13 +1,13 @@
 [package]
-name = "rust_qt_binding_generator"
+name = "riqtshaw"
 version = "0.3.4"
 authors = ["Baeo Maltinksy <baeo.maltinsky@gmail.com>"]
 license = "AGPL-3.0-or-later"
-documentation = "https://phabricator.kde.org/source/rust-qt-binding-generator/"
-homepage = "https://phabricator.kde.org/source/rust-qt-binding-generator/"
-repository = "https://anongit.kde.org/rust-qt-binding-generator"
 edition = "2018"
 
 [dependencies]
 regex= "1"
-codegen = "0.1.1"
+
+[dependencies.codegen]
+git = "https://github.com/kalix-systems/codegen"
+rev = "edeb1e0aa93016bf5c23a47d669cbdf13c80e5a3"
