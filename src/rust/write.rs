@@ -1,11 +1,7 @@
 use super::*;
 use codegen::*;
 
-pub(super) fn write_rust_interface_object(
-    r: &mut Vec<u8>,
-    object: &Object,
-    conf: &Config,
-) -> Result<()> {
+pub(super) fn write_rust_interface_object(r: &mut Vec<u8>, object: &Object) -> Result<()> {
     let mut scope = Scope::new();
     let lcname = snake_case(&object.name);
 
@@ -14,30 +10,19 @@ pub(super) fn write_rust_interface_object(
     push_emitter(&mut scope, object);
     push_model(&mut scope, object);
     push_trait(&mut scope, object);
+    c_ffi::push_new(&mut scope, object);
 
     writeln!(r, "{}", scope.to_string())?;
 
     writeln!(
         r,
         "
-
 #[no_mangle]
-pub extern \"C\" fn {}_new(",
-        lcname
-    )?;
-    r_constructor_args_decl(r, &lcname, object, conf)?;
-    writeln!(r, ",\n) -> *mut {} {{", object.name)?;
-    r_constructor_args(r, &lcname, object, conf)?;
-    writeln!(
-        r,
-        "    Box::into_raw(Box::new(d_{}))
-}}
-
-#[no_mangle]
-pub unsafe extern \"C\" fn {0}_free(ptr: *mut {}) {{
+pub unsafe extern \"C\" fn {lcname}_free(ptr: *mut {object_name}) {{
     Box::from_raw(ptr).emit().clear();
 }}",
-        lcname, object.name
+        lcname = lcname,
+        object_name = object.name
     )?;
 
     for (name, p) in &object.properties {

@@ -3,18 +3,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 
-pub enum RustEdition {
-    Rust2015,
-    Rust2018,
-    Unknown,
-}
-
 pub struct Config {
     pub out_dir: PathBuf,
     pub cpp_file: PathBuf,
     pub objects: BTreeMap<String, Rc<Object>>,
     pub rust: Rust,
-    pub rust_edition: RustEdition,
     pub overwrite_implementation: bool,
 }
 
