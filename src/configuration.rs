@@ -150,7 +150,7 @@ pub enum ObjectType {
     Tree,
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum SimpleType {
     QString,
     QByteArray,
