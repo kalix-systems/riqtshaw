@@ -17,7 +17,6 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
     }
 
     for (name, prop) in object.object_properties() {
-        dbg!(name);
         new.arg(&snake_case(name), prop.type_name());
     }
 
