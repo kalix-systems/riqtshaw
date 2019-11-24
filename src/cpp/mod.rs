@@ -1137,15 +1137,14 @@ bool {0}::setHeaderData(int section, Qt::Orientation orientation, const QVariant
 fn constructor_args(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) -> Result<()> {
     let lcname = snake_case(&o.name);
 
-    for (name, p) in &o.properties {
-        if let Type::Object(object) = &p.property_type {
+    for (name, prop) in &o.properties {
+        if let Type::Object(object) = &prop.property_type {
             write!(w, ", {}m_{}", prefix, name)?;
             constructor_args(w, &format!("m_{}->", name), object, conf)?;
         } else {
             write!(w, ",\n        {}", changed_f(o, name))?;
         }
     }
-
     if o.object_type == ObjectType::List {
         writeln!(
             w,
@@ -1162,6 +1161,37 @@ fn constructor_args(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) ->
             name = o.name,
             snake_case_class_name = lcname,
             col_count = o.column_count() - 1
+        )?;
+    }
+
+    add_factory_lambdas(w, o)?;
+
+    Ok(())
+}
+
+fn add_factory_lambdas(write_buf: &mut Vec<u8>, object: &Object) -> Result<()> {
+    let qobject_type_properties = object.item_properties.iter().filter(|(_, prop)| {
+        if let SimpleType::QObject(_) = prop.item_property_type {
+            true
+        } else {
+            false
+        }
+    });
+
+    for (name, prop) in qobject_type_properties {
+        let nested_model_name = if let SimpleType::QObject(class_name) = &prop.item_property_type {
+            class_name
+        } else {
+            break;
+        };
+
+        writeln!(
+            write_buf,
+            "[]({name}* o) {{
+                 return new {nested_model_name};
+                }}",
+            name = name,
+            nested_model_name = nested_model_name,
         )?;
     }
 
