@@ -47,6 +47,7 @@ impl ItemProp {
             optional,
             rust_by_value,
             write,
+            class_name: String::from(""),
             item_property_type,
             roles,
         }
