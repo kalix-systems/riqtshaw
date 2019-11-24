@@ -1,7 +1,5 @@
-#![allow(unused)]
 use super::*;
 use codegen::{Block, Formatter, Function as Func, Scope};
-use std::string::ToString;
 
 pub(super) fn push_new(scope: &mut Scope, object: &Object) {
     let mut buf = String::new();
@@ -230,7 +228,7 @@ fn new_ctor(object: &Object, name: &str, func: &mut Func) {
         }
     }
 
-    for (name, p) in object.object_properties() {
+    for (name, _) in object.object_properties() {
         func.line(format!(", d_{}", snake_case(name)));
     }
     func.line(");");
