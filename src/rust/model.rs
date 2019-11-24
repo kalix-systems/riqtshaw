@@ -32,11 +32,11 @@ fn model_def(object: &Object) -> Struct {
 fn tree_model_def(object: &Object) -> Struct {
     let mut model = Struct::new(&model_name(object).unwrap());
     let qobj = qobject(&object.name);
-    let qobj_fn_ptr = format!("fn(*mut {qobj})", qobj = qobj);
 
     let index_c_decl = "index: COption<usize>";
     let dest_c_decl = " dest: COption<usize>";
 
+    let qobj_fn_ptr = format!("fn(*mut {qobj})", qobj = qobj);
     let begin_index_fn_ptr = format!(
         "fn(*mut {qobj}, {index_c_decl}, usize, usize)",
         qobj = qobj,
@@ -69,8 +69,41 @@ fn tree_model_def(object: &Object) -> Struct {
                 dest_c_decl = dest_c_decl
             ),
         );
+    // for each QObject item property we must give the user a
+    // factory function to produce that type from rust
+    add_nested_model_factories(object, &mut model);
 
     model
+}
+
+fn add_nested_model_factories(object: &Object, model: &mut Struct) {
+    object
+        .item_properties
+        .iter()
+        .filter(|(_, prop)| {
+            if let SimpleType::QObject(_) = prop.item_property_type {
+                true
+            } else {
+                false
+            }
+        })
+        .for_each(|(_, prop)| {
+            let class_name = if let SimpleType::QObject(class_name) = &prop.item_property_type {
+                class_name
+            } else {
+                return;
+            };
+
+            let factory_signature = format!(
+                "fn(*mut {qobj}) -> {class_name}",
+                qobj = &object.name,
+                class_name = &class_name,
+            );
+
+            let factory_name = format!("build_{class_name}", class_name = &class_name,);
+
+            model.field(&factory_name, &factory_signature);
+        });
 }
 
 fn list_model_def(object: &Object) -> Struct {
