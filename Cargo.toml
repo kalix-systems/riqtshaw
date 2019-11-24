@@ -10,3 +10,4 @@ edition = "2018"
 
 [dependencies]
 regex= "1"
+codegen = "0.1.1"

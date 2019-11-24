@@ -5,14 +5,19 @@ use crate::configuration_private::*;
 use crate::util::{snake_case, write_if_different};
 use std::io::{Result, Write};
 
+mod emitter;
+mod model;
+mod trait_;
 mod util;
-use util::*;
-
-mod write_helper;
-use write_helper::*;
-
 mod write;
+mod write_helper;
+
+use emitter::*;
+use model::*;
+use trait_::*;
+use util::*;
 use write::*;
+use write_helper::*;
 
 pub fn write_interface(conf: &Config) -> Result<()> {
     let mut r = Vec::new();

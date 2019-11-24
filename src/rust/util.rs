@@ -1,9 +1,18 @@
 use super::*;
 
+pub(super) fn qobject(name: &str) -> String {
+    format!("{name}QObject", name = name)
+}
+
+pub(super) fn emitter(name: &str) -> String {
+    format!("{name}Emitter", name = name)
+}
+
 pub(super) fn rust_type(p: &Property) -> String {
     if p.optional {
         return format!("Option<{}>", p.property_type.rust_type());
     }
+
     p.property_type.rust_type().to_string()
 }
 

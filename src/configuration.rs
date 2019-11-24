@@ -70,13 +70,28 @@ impl ConfigPrivate for Config {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct Object {
     pub name: String,
     pub functions: BTreeMap<String, Function>,
     pub item_properties: BTreeMap<String, ItemProperty>,
     pub object_type: ObjectType,
     pub properties: BTreeMap<String, Property>,
+}
+
+impl Object {
+    pub fn non_object_property_names(&self) -> impl Iterator<Item = &String> {
+        self.properties
+            .iter()
+            .filter(|(_, property)| !property.is_object())
+            .map(|(prop_name, _)| prop_name)
+    }
+
+    pub fn object_properties(&self) -> impl Iterator<Item = (&String, &Property)> {
+        self.properties
+            .iter()
+            .filter(|(_, property)| property.is_object())
+    }
 }
 
 impl ObjectPrivate for Object {
@@ -93,7 +108,7 @@ impl ObjectPrivate for Object {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct Property {
     pub optional: bool,
     pub property_type: Type,
@@ -128,14 +143,14 @@ pub struct Rust {
     pub interface_module: String,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum ObjectType {
     Object,
     List,
     Tree,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum SimpleType {
     QString,
     QByteArray,
@@ -224,7 +239,7 @@ impl SimpleTypePrivate for SimpleType {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum Type {
     Simple(SimpleType),
     Object(Rc<Object>),
@@ -281,7 +296,7 @@ impl TypePrivate for Type {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct ItemProperty {
     pub item_property_type: SimpleType,
     pub optional: bool,
@@ -320,7 +335,7 @@ impl ItemPropertyPrivate for ItemProperty {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct Function {
     pub return_type: SimpleType,
     pub mutable: bool,
@@ -333,7 +348,7 @@ impl TypeName for Function {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct Argument {
     pub name: String,
     pub argument_type: SimpleType,

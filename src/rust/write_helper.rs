@@ -3,11 +3,12 @@ use super::*;
 pub(super) fn r_constructor_args_decl(
     r: &mut Vec<u8>,
     name: &str,
-    o: &Object,
+    object: &Object,
     conf: &Config,
 ) -> Result<()> {
-    write!(r, "    {}: *mut {}QObject", snake_case(name), o.name)?;
-    for (p_name, p) in &o.properties {
+    write!(r, "    {}: *mut {}QObject", snake_case(name), object.name)?;
+
+    for (p_name, p) in &object.properties {
         if let Type::Object(object) = &p.property_type {
             writeln!(r, ",")?;
             r_constructor_args_decl(r, p_name, object, conf)?;
@@ -17,36 +18,40 @@ pub(super) fn r_constructor_args_decl(
                 ",\n    {}_{}_changed: fn(*mut {}QObject)",
                 snake_case(name),
                 snake_case(p_name),
-                o.name
+                object.name
             )?;
         }
     }
-    if o.object_type == ObjectType::List {
+
+    if object.object_type == ObjectType::List {
         write!(
             r,
             ",\n    {}_new_data_ready: fn(*mut {}QObject)",
             snake_case(name),
-            o.name
+            object.name
         )?;
-    } else if o.object_type == ObjectType::Tree {
+    } else if object.object_type == ObjectType::Tree {
         write!(
             r,
             ",\n    {}_new_data_ready: fn(*mut {}QObject, index: COption<usize>)",
             snake_case(name),
-            o.name
+            object.name
         )?;
     }
-    if o.object_type != ObjectType::Object {
-        let index_decl = if o.object_type == ObjectType::Tree {
+
+    if object.object_type != ObjectType::Object {
+        let index_decl = if object.object_type == ObjectType::Tree {
             " index: COption<usize>,"
         } else {
             ""
         };
-        let dest_decl = if o.object_type == ObjectType::Tree {
+
+        let dest_decl = if object.object_type == ObjectType::Tree {
             " index: COption<usize>,"
         } else {
             ""
         };
+
         write!(
             r,
             ",
@@ -61,34 +66,36 @@ pub(super) fn r_constructor_args_decl(
     {2}_end_move_rows: fn(*mut {0}QObject),
     {2}_begin_remove_rows: fn(*mut {0}QObject,{1} usize, usize),
     {2}_end_remove_rows: fn(*mut {0}QObject)",
-            o.name,
+            object.name,
             index_decl,
             snake_case(name),
             dest_decl
         )?;
     }
+
     Ok(())
 }
 
 pub(super) fn r_constructor_args(
     r: &mut Vec<u8>,
     name: &str,
-    o: &Object,
+    object: &Object,
     conf: &Config,
 ) -> Result<()> {
-    for (name, p) in &o.properties {
+    for (name, p) in &object.properties {
         if let Type::Object(object) = &p.property_type {
             r_constructor_args(r, name, object, conf)?;
         }
     }
+
     writeln!(
         r,
         "    let {}_emit = {}Emitter {{
         qobject: Arc::new(AtomicPtr::new({0})),",
         snake_case(name),
-        o.name
+        object.name
     )?;
-    for (p_name, p) in &o.properties {
+    for (p_name, p) in &object.properties {
         if p.is_object() {
             continue;
         }
@@ -99,16 +106,17 @@ pub(super) fn r_constructor_args(
             snake_case(name)
         )?;
     }
-    if o.object_type != ObjectType::Object {
+    if object.object_type != ObjectType::Object {
         writeln!(
             r,
             "        new_data_ready: {}_new_data_ready,",
             snake_case(name)
         )?;
     }
+
     let mut model = String::new();
-    if o.object_type != ObjectType::Object {
-        let type_ = if o.object_type == ObjectType::List {
+    if object.object_type != ObjectType::Object {
+        let type_ = if object.object_type == ObjectType::List {
             "List"
         } else {
             "Tree"
@@ -130,7 +138,7 @@ pub(super) fn r_constructor_args(
         end_move_rows: {2}_end_move_rows,
         begin_remove_rows: {2}_begin_remove_rows,
         end_remove_rows: {2}_end_remove_rows,",
-            o.name,
+            object.name,
             type_,
             snake_case(name)
         )?;
@@ -139,10 +147,10 @@ pub(super) fn r_constructor_args(
         r,
         "    }};\n    let d_{} = {}::new({0}_emit{}",
         snake_case(name),
-        o.name,
+        object.name,
         model
     )?;
-    for (name, p) in &o.properties {
+    for (name, p) in &object.properties {
         if p.is_object() {
             write!(r, ",\n        d_{}", snake_case(name))?;
         }
