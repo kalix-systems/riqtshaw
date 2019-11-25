@@ -40,7 +40,7 @@ fn emitter_def(object: &Object) -> Struct {
         ObjectType::List => {
             emitter.field(
                 "new_data_ready",
-                format!("fn (*mut {qobject})", qobject = qobject(&object.name)),
+                format!("fn(*mut {qobject})", qobject = qobject(&object.name)),
             );
         }
         ObjectType::Tree => {
