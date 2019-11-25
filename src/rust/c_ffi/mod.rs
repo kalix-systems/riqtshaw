@@ -2,10 +2,12 @@ use super::*;
 use codegen::{Block, Formatter, Function as Func, Scope};
 
 mod funcs;
+mod item_props;
 mod models;
 mod new_imp;
 mod properties;
 
+pub(super) use item_props::push_item_props;
 pub(super) use models::push_models;
 pub(super) use properties::push_properties;
 
