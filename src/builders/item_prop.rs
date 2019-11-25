@@ -1,5 +1,6 @@
 use crate::configuration::*;
 
+#[derive(Default)]
 pub struct ItemProp {
     item_property_type: Option<Type>,
     optional: bool,
