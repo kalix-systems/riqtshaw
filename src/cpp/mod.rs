@@ -51,58 +51,54 @@ pub fn write_header(conf: &Config) -> Result<()> {
     Ok(())
 }
 
-fn write_header_item_model(header_buf: &mut Vec<u8>, obj: &Object) -> Result<()> {
-    writeln!(header_buf, include_str!("cpp/header_item_model.hpp"))?;
+fn write_header_item_model(h: &mut Vec<u8>, o: &Object) -> Result<()> {
+    writeln!(h, include_str!("cpp/header_item_model.hpp"))?;
 
-    if model_is_writable(obj) {
+    if model_is_writable(o) {
         writeln!(
-            header_buf,
+            h,
             "    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;"
         )?;
     }
 
-    for (name, item_prop) in &obj.item_properties {
-        let read = property_type(item_prop);
+    for (name, ip) in &o.item_properties {
+        let r = property_type(ip);
 
-        let read_write = if read == "QVariant" || item_prop.item_property_type.is_complex() {
-            format!("const {}&", read)
+        let rw = if r == "QVariant" || ip.item_property_type.is_complex() {
+            format!("const {}&", r)
         } else {
-            read.clone()
+            r.clone()
         };
 
-        if obj.object_type == ObjectType::List {
-            writeln!(
-                header_buf,
-                "    Q_INVOKABLE {} {}(int row) const;",
-                read, name
-            )?;
-            if item_prop.write {
+        if o.object_type == ObjectType::List {
+            writeln!(h, "    Q_INVOKABLE {} {}(int row) const;", r, name)?;
+            if ip.write {
                 writeln!(
-                    header_buf,
+                    h,
                     "    Q_INVOKABLE bool set{}(int row, {} value);",
                     upper_initial(name),
-                    read_write
+                    rw
                 )?;
             }
         } else {
             writeln!(
-                header_buf,
+                h,
                 "    Q_INVOKABLE {} {}(const QModelIndex& index) const;",
-                read, name
+                r, name
             )?;
-            if item_prop.write {
+            if ip.write {
                 writeln!(
-                    header_buf,
+                    h,
                     "    Q_INVOKABLE bool set{}(const QModelIndex& index, {} value);",
                     upper_initial(name),
-                    read_write
+                    rw
                 )?;
             }
         }
     }
 
     writeln!(
-        header_buf,
+        h,
         "
 Q_SIGNALS:
     // new data is ready to be made available to the model with fetchMore()
@@ -116,9 +112,9 @@ private:
     Ok(())
 }
 
-fn write_header_object(header_buf: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result<()> {
+fn write_header_object(h: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result<()> {
     writeln!(
-        header_buf,
+        h,
         "class {} : public {} {{ Q_OBJECT",
         obj.name,
         base_type(obj)
@@ -127,31 +123,31 @@ fn write_header_object(header_buf: &mut Vec<u8>, obj: &Object, conf: &Config) ->
     for object in conf
         .objects
         .values()
-        .filter(|obj| obj.contains_object() && obj.name != obj.name)
+        .filter(|o| o.contains_object() && o.name != obj.name)
     {
-        writeln!(header_buf, "    friend class {};", object.name)?;
+        writeln!(h, "    friend class {};", object.name)?;
     }
 
     writeln!(
-        header_buf,
+        h,
         "public:
     class Private;
 private:"
     )?;
 
     for (name, p) in obj.object_properties() {
-        writeln!(header_buf, "{}* const m_{};", p.type_name(), name)?;
+        writeln!(h, "{}* const m_{};", p.type_name(), name)?;
     }
 
     writeln!(
-        header_buf,
+        h,
         "Private * m_d;
         bool m_ownsPrivate;"
     )?;
 
     for (name, p) in &obj.properties {
         writeln!(
-            header_buf,
+            h,
             "Q_PROPERTY({0} {1} READ {1} {2}NOTIFY {1}Changed FINAL)",
             get_return_type(&p),
             name,
@@ -160,7 +156,7 @@ private:"
     }
 
     writeln!(
-        header_buf,
+        h,
         "
     explicit {constructor_name}(bool owned, QObject *parent);
 public:
@@ -169,60 +165,50 @@ public:
         constructor_name = obj.name
     )?;
 
-    for (name, prop) in &obj.properties {
-        if prop.is_object() {
-            writeln!(header_buf, "const {}* {}() const;", prop.type_name(), name)?;
-            writeln!(header_buf, "{}* {}();", prop.type_name(), name)?;
+    for (name, p) in &obj.properties {
+        if p.is_object() {
+            writeln!(h, "const {}* {}() const;", p.type_name(), name)?;
+            writeln!(h, "{}* {}();", p.type_name(), name)?;
         } else {
-            let (t, t2) = if prop.optional && !prop.is_complex() {
+            let (t, t2) = if p.optional && !p.is_complex() {
                 ("QVariant", "const QVariant&")
             } else {
-                (prop.type_name(), prop.property_type.cpp_set_type())
+                (p.type_name(), p.property_type.cpp_set_type())
             };
 
-            writeln!(header_buf, "{} {}() const;", t, name)?;
+            writeln!(h, "{} {}() const;", t, name)?;
 
-            if prop.write {
-                writeln!(header_buf, "void set{}({} v);", upper_initial(name), t2)?;
+            if p.write {
+                writeln!(h, "void set{}({} v);", upper_initial(name), t2)?;
             }
         }
     }
 
-    for (name, func) in &obj.functions {
-        write!(
-            header_buf,
-            "    Q_INVOKABLE {} {}(",
-            func.return_type.name(),
-            name
-        )?;
+    for (name, f) in &obj.functions {
+        write!(h, "    Q_INVOKABLE {} {}(", f.return_type.name(), name)?;
 
-        for (i, arg) in func.arguments.iter().enumerate() {
+        for (i, a) in f.arguments.iter().enumerate() {
             if i != 0 {
-                write!(header_buf, ", ")?;
+                write!(h, ", ")?;
             }
 
-            write!(
-                header_buf,
-                "{} {}",
-                arg.argument_type.cpp_set_type(),
-                arg.name
-            )?;
+            write!(h, "{} {}", a.argument_type.cpp_set_type(), a.name)?;
         }
 
-        writeln!(header_buf, "){};", if func.mutable { "" } else { " const" })?;
+        writeln!(h, "){};", if f.mutable { "" } else { " const" })?;
     }
 
     if base_type(obj) == "QAbstractItemModel" {
-        write_header_item_model(header_buf, obj)?;
+        write_header_item_model(h, obj)?;
     }
 
-    writeln!(header_buf, "Q_SIGNALS:")?;
+    writeln!(h, "Q_SIGNALS:")?;
 
     for name in obj.properties.keys() {
-        writeln!(header_buf, "    void {}Changed();", name)?;
+        writeln!(h, "    void {}Changed();", name)?;
     }
 
-    writeln!(header_buf, "}};")?;
+    writeln!(h, "}};")?;
 
     Ok(())
 }
