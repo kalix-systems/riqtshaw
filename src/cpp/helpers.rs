@@ -1,5 +1,21 @@
 use super::*;
 
+pub(super) fn block<F: Fn(&mut Vec<u8>) -> Result<()>>(
+    buf: &mut Vec<u8>,
+    before: &str,
+    after: &str,
+    content: F,
+) -> Result<()> {
+    writeln!(buf, "{} {{", before)?;
+
+    content(buf)?;
+
+    writeln!(buf, "}}")?;
+    write!(buf, "{}", after)?;
+
+    Ok(())
+}
+
 pub(super) fn property_type(prop: &ItemProperty) -> String {
     if prop.optional && !prop.item_property_type.is_complex() {
         return "QVariant".into();
