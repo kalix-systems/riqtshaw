@@ -2,9 +2,11 @@ use super::*;
 use codegen::{Block, Formatter, Function as Func, Scope};
 
 mod funcs;
+mod models;
 mod new_imp;
 mod properties;
 
+pub(super) use models::push_models;
 pub(super) use properties::push_properties;
 
 pub(super) fn push_new(scope: &mut Scope, object: &Object) {
