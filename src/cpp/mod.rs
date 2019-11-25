@@ -115,7 +115,11 @@ private:
 fn write_header_object(h: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     writeln!(h, "class {} : public {} {{ Q_OBJECT", o.name, base_type(o))?;
 
-    for object in conf.objects.values().filter(|o| o.contains_object()) {
+    for object in conf
+        .objects
+        .values()
+        .filter(|obj| obj.contains_object() && o.name != obj.name)
+    {
         writeln!(h, "    friend class {};", object.name)?;
     }
 
