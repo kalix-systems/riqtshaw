@@ -16,8 +16,12 @@ pub(super) fn lower_initial(name: &str) -> String {
     format!("{}{}", &name[..1].to_lowercase(), &name[1..])
 }
 
-pub(super) fn write_property(name: &str) -> String {
-    format!("WRITE set{} ", upper_initial(name))
+pub(super) fn write_property(name: &str, prop: &Property) -> String {
+    if prop.write {
+        format!("WRITE set{} ", upper_initial(name))
+    } else {
+        "".into()
+    }
 }
 
 pub(super) fn base_type(o: &Object) -> &str {
@@ -26,6 +30,21 @@ pub(super) fn base_type(o: &Object) -> &str {
     }
 
     "QObject"
+}
+
+pub(super) fn get_return_type(prop: &Property) -> String {
+    let mut t = if prop.optional && !prop.is_complex() {
+        "QVariant"
+    } else {
+        prop.type_name()
+    }
+    .to_string();
+
+    if prop.is_object() {
+        t.push_str("*");
+    }
+
+    return t;
 }
 
 pub(super) fn model_is_writable(o: &Object) -> bool {
