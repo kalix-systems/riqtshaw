@@ -1164,7 +1164,7 @@ fn constructor_args(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) ->
         )?;
     }
 
-    add_factory_lambdas(w, o)?;
+    // add_factory_lambdas(w, o)?;
 
     Ok(())
 }
