@@ -5,8 +5,8 @@ use crate::configuration_private::*;
 use crate::util::{snake_case, write_if_different};
 use std::io::{Result, Write};
 
-mod headers;
-pub use headers::write_header;
+mod header;
+pub use header::write_header;
 
 mod code;
 pub use code::write_cpp;
