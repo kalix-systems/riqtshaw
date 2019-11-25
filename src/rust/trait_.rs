@@ -207,10 +207,10 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
                 .ret("bool");
 
             match (&item_prop.item_property_type, item_prop.optional) {
-                (Simple(SimpleType::QByteArray), true) => {
+                (crate::configuration::Type::Simple(SimpleType::QByteArray), true) => {
                     setter.arg("_", "Option<&[u8]>");
                 }
-                (SimpleType::QByteArray, false) => {
+                (crate::configuration::Type::Simple(SimpleType::QByteArray), false) => {
                     setter.arg("_", "&[u8]");
                 }
                 _ => {
