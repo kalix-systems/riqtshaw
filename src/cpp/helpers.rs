@@ -1,14 +1,15 @@
 use super::*;
 
-pub(super) fn block<F: Fn(&mut Vec<u8>) -> Result<()>>(
+pub(super) fn block<T, F: Fn(&mut Vec<u8>, T) -> Result<()>>(
     buf: &mut Vec<u8>,
     before: &str,
     after: &str,
     content: F,
+    args: T,
 ) -> Result<()> {
     writeln!(buf, "{} {{", before)?;
 
-    content(buf)?;
+    content(buf, args)?;
 
     writeln!(buf, "}}")?;
     write!(buf, "{}", after)?;
