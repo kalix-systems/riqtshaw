@@ -191,7 +191,7 @@ public:
     for (name, func) in &obj.functions {
         write!(
             header_buf,
-            "    Q_INVOKABLE {} {}(",
+            "Q_INVOKABLE {} {}(",
             func.return_type.name(),
             name
         )?;

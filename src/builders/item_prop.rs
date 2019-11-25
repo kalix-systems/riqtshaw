@@ -20,15 +20,21 @@ impl ItemProp {
         }
     }
 
-    pub fn simple(mut self, item_property_type: SimpleType) -> Self {
+    pub fn simple(
+        mut self,
+        item_property_type: SimpleType,
+    ) -> Self {
         self.item_property_type
             .replace(Type::Simple(item_property_type));
         self
     }
 
-    pub fn object(mut self, item_property_type: SimpleType) -> Self {
+    pub fn object(
+        mut self,
+        object_property_type: std::rc::Rc<Object>,
+    ) -> Self {
         self.item_property_type
-            .replace(Type::Simple(item_property_type));
+            .replace(Type::Object(object_property_type));
         self
     }
 

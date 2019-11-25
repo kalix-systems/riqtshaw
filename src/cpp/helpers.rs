@@ -1,11 +1,13 @@
 use super::*;
 
-pub(super) fn property_type(p: &ItemProperty) -> String {
-    if p.optional && !p.item_property_type.is_complex() {
+pub(super) fn property_type(prop: &ItemProperty) -> String {
+    if prop.optional && !prop.item_property_type.is_complex() {
         return "QVariant".into();
     }
-
-    p.type_name().to_string()
+    match &prop.item_property_type {
+        Type::Simple(_) => prop.type_name().to_string(),
+        Type::Object(obj) => obj.name.clone() + "Ref".into(),
+    }
 }
 
 pub(super) fn upper_initial(name: &str) -> String {
@@ -113,17 +115,11 @@ pub(super) fn connect(w: &mut Vec<u8>, d: &str, o: &Object, conf: &Config) -> Re
 pub(super) fn role_name(role: &str) -> String {
     match role {
         "display" => "DisplayRole".into(),
-
         "decoration" => "DecorationRole".into(),
-
         "edit" => "EditRole".into(),
-
         "toolTip" => "ToolTipRole".into(),
-
         "statustip" => "StatusTipRole".into(),
-
         "whatsthis" => "WhatsThisRole".into(),
-
         _ => panic!("Unknown role {}", role),
     }
 }
@@ -141,8 +137,6 @@ fn write_function_c_decl(
     o: &Object,
 ) -> Result<()> {
     let lc = snake_case(name);
-
-    write!(w, "    ")?;
 
     if f.return_type.is_complex() {
         write!(w, "void")?;
@@ -164,11 +158,11 @@ fn write_function_c_decl(
     // pointers to their content and the length
     for a in &f.arguments {
         if a.type_name() == "QString" {
-            write!(w, ", const ushort*, int")?;
+            write!(w, ",const ushort*, int")?;
         } else if a.type_name() == "QByteArray" {
-            write!(w, ", const char*, int")?;
+            write!(w, ",const char*, int")?;
         } else {
-            write!(w, ", {}", a.type_name())?;
+            write!(w, ",{}", a.type_name())?;
         }
     }
 
@@ -189,53 +183,53 @@ fn write_function_c_decl(
 pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     let lcname = snake_case(&o.name);
 
-    write!(w, "    {}::Private* {}_new(", o.name, lcname)?;
+    write!(w, "{}::Private* {}_new(", o.name, lcname)?;
 
     constructor_args_decl(w, o, conf)?;
 
     writeln!(w, ");")?;
 
-    writeln!(w, "    void {}_free({}::Private*);", lcname, o.name)?;
+    writeln!(w, "void {}_free({}::Private*);", lcname, o.name)?;
 
-    for (name, p) in &o.properties {
-        let base = format!("{}_{}", lcname, snake_case(name));
+    for (prop_name, prop) in &o.properties {
+        let base = format!("{}_{}", lcname, snake_case(prop_name));
 
-        if p.is_object() {
+        if prop.is_object() {
             writeln!(
                 w,
-                "    {}::Private* {}_get(const {}::Private*);",
-                p.type_name(),
+                "{}::Private* {}_get(const {}::Private*);",
+                prop.type_name(),
                 base,
                 o.name
             )?;
-        } else if p.is_complex() {
+        } else if prop.is_complex() {
             writeln!(
                 w,
-                "    void {}_get(const {}::Private*, {});",
+                "void {}_get(const {}::Private*, {});",
                 base,
                 o.name,
-                p.c_get_type()
+                prop.c_get_type()
             )?;
-        } else if p.optional {
+        } else if prop.optional {
             writeln!(
                 w,
-                "    option_{} {}_get(const {}::Private*);",
-                p.type_name(),
+                "option_{} {}_get(const {}::Private*);",
+                prop.type_name(),
                 base,
                 o.name
             )?;
         } else {
             writeln!(
                 w,
-                "    {} {}_get(const {}::Private*);",
-                p.type_name(),
+                "{} {}_get(const {}::Private*);",
+                prop.type_name(),
                 base,
                 o.name
             )?;
         }
 
-        if p.write {
-            let mut t = p.property_type.c_set_type();
+        if prop.write {
+            let mut t = prop.property_type.c_set_type();
 
             if t == "qstring_t" {
                 t = "const ushort *str, int len";
@@ -245,7 +239,7 @@ pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) ->
 
             writeln!(w, "    void {}_set({}::Private*, {});", base, o.name, t)?;
 
-            if p.optional {
+            if prop.optional {
                 writeln!(w, "    void {}_set_none({}::Private*);", base, o.name)?;
             }
         }
@@ -265,7 +259,7 @@ fn constructor_args_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
             write!(w, ", ")?;
             constructor_args_decl(w, object, conf)?;
         } else {
-            write!(w, ", void (*)({}*)", o.name)?;
+            writeln!(w, ", void (*)({}*)", o.name)?;
         }
     }
 
