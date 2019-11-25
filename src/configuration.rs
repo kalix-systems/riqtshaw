@@ -296,7 +296,6 @@ impl TypePrivate for Type {
 pub struct ItemProperty {
     pub item_property_type: Type,
     pub optional: bool,
-    pub class_name: String,
     pub roles: Vec<Vec<String>>,
     pub rust_by_value: bool,
     pub write: bool,

@@ -1,7 +1,7 @@
 use crate::configuration::*;
 
 pub struct ItemProp {
-    item_property_type: SimpleType,
+    item_property_type: Type,
     optional: bool,
     roles: Vec<Vec<String>>,
     rust_by_value: bool,
@@ -9,7 +9,7 @@ pub struct ItemProp {
 }
 
 impl ItemProp {
-    pub fn new(item_property_type: SimpleType) -> Self {
+    pub fn new(item_property_type: Type) -> Self {
         Self {
             optional: false,
             rust_by_value: false,
@@ -47,7 +47,6 @@ impl ItemProp {
             optional,
             rust_by_value,
             write,
-            class_name: String::from(""),
             item_property_type,
             roles,
         }

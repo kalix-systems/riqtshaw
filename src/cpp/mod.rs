@@ -1171,7 +1171,7 @@ fn constructor_args(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) ->
 
 fn add_factory_lambdas(write_buf: &mut Vec<u8>, object: &Object) -> Result<()> {
     let qobject_type_properties = object.item_properties.iter().filter(|(_, prop)| {
-        if let SimpleType::QObject(_) = prop.item_property_type {
+        if let Type::Object(_) = prop.item_property_type {
             true
         } else {
             false
@@ -1179,8 +1179,8 @@ fn add_factory_lambdas(write_buf: &mut Vec<u8>, object: &Object) -> Result<()> {
     });
 
     for (_, prop) in qobject_type_properties {
-        let nested_model_name = if let SimpleType::QObject(class_name) = &prop.item_property_type {
-            class_name
+        let nested_model_name = if let Type::Object(obj) = &prop.item_property_type {
+            obj.name.clone()
         } else {
             break;
         };
