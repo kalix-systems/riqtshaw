@@ -1,4 +1,4 @@
-  ",
+        ,
         [](const {name}* o, option_quintptr id) {{
             if (id.some) {{
                 int row = {snake_case_class_name}_row(o->m_d, id.value);
@@ -63,4 +63,4 @@
         }},
         []({name}* o) {{
             o->endRemoveRows();
-        }}"
+        }}

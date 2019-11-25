@@ -1178,7 +1178,7 @@ fn add_factory_lambdas(write_buf: &mut Vec<u8>, object: &Object) -> Result<()> {
         }
     });
 
-    for (name, prop) in qobject_type_properties {
+    for (_, prop) in qobject_type_properties {
         let nested_model_name = if let SimpleType::QObject(class_name) = &prop.item_property_type {
             class_name
         } else {
@@ -1187,10 +1187,11 @@ fn add_factory_lambdas(write_buf: &mut Vec<u8>, object: &Object) -> Result<()> {
 
         writeln!(
             write_buf,
-            "[]({name}* o) {{
-                 return new {nested_model_name};
+            ",
+            []() {{
+                {nested_model_name} alloc = new Messages;
+                 return alloc;
                 }}",
-            name = name,
             nested_model_name = nested_model_name,
         )?;
     }
