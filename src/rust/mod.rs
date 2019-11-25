@@ -11,17 +11,16 @@ mod model;
 mod trait_;
 mod util;
 mod write;
-mod write_helper;
 
 use emitter::*;
 use model::*;
 use trait_::*;
 use util::*;
 use write::*;
-use write_helper::*;
 
 pub fn write_interface(conf: &Config) -> Result<()> {
     let mut r = Vec::new();
+
     writeln!(
         r,
         "
