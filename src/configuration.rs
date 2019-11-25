@@ -294,7 +294,7 @@ impl TypePrivate for Type {
 
 #[derive(PartialEq, Debug)]
 pub struct ItemProperty {
-    pub item_property_type: SimpleType,
+    pub item_property_type: Type,
     pub optional: bool,
     pub class_name: String,
     pub roles: Vec<Vec<String>>,

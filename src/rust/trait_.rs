@@ -207,7 +207,7 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
                 .ret("bool");
 
             match (&item_prop.item_property_type, item_prop.optional) {
-                (SimpleType::QByteArray, true) => {
+                (Simple(SimpleType::QByteArray), true) => {
                     setter.arg("_", "Option<&[u8]>");
                 }
                 (SimpleType::QByteArray, false) => {
