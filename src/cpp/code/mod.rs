@@ -88,7 +88,6 @@ pub fn write_cpp(conf: &Config) -> Result<()> {
     }
 
     let file = conf.out_dir.join(&conf.cpp_file);
-
     write_if_different(file, &write_buf)
 }
 
