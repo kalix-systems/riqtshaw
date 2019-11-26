@@ -1,7 +1,8 @@
 use super::*;
 use codegen::{Function as CGFunc, *};
 
-const CLONE_DOC: &str = "Clone the emitter
+const CLONE_DOC: &str = "
+Clone the emitter
 
 The emitter can only be cloned when it is mutable. The emitter calls
 into C++ code which may call into Rust again. If emmitting is possible

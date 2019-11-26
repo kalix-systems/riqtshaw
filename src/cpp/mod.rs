@@ -14,6 +14,9 @@ pub use code::write_cpp;
 mod helpers;
 use helpers::*;
 
+mod raw_bindgen;
+pub use raw_bindgen::write_raw_header;
+
 #[allow(unused)]
 fn add_factory_lambdas(write_buf: &mut Vec<u8>, object: &Object) -> Result<()> {
     let qobject_type_properties = object.item_properties.iter().filter(|(_, prop)| {

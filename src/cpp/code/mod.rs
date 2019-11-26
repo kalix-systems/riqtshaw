@@ -99,6 +99,7 @@ fn write_cpp_model(w: &mut Vec<u8>, o: &Object) -> Result<()> {
     } else {
         "index.row()"
     };
+
     writeln!(w, "extern \"C\" {{")?;
 
     define_ffi_getters(o, w)?;

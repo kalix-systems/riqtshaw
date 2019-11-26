@@ -10,8 +10,10 @@ use std::error::Error;
 
 /// Generate bindings from a bindings configuration.
 pub fn generate_bindings(config: &Config) -> Result<(), Box<dyn Error>> {
+    rust::write_interface(config)?;
+
+    cpp::write_raw_header(config)?;
     cpp::write_header(config)?;
     cpp::write_cpp(config)?;
-    rust::write_interface(config)?;
     Ok(())
 }
