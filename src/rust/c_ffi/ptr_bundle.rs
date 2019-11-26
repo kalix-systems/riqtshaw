@@ -11,6 +11,7 @@ pub(crate) fn ptr_bundle(object: &Object) -> Struct {
         .vis("pub")
         .derive("Clone")
         .derive("Copy");
+
     fields(object, &name, &mut bundle);
 
     bundle

@@ -58,25 +58,18 @@ pub fn write_header(conf: &Config) -> Result<()> {
     Ok(())
 }
 
-fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
-    let lcname = snake_case(&o.name);
+fn write_extern_typedefs(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result<()> {
+    let lcname = snake_case(&obj.name);
+
     writeln!(
         w,
         "{class_name}* {snake_class_name};",
-        class_name = o.name,
+        class_name = obj.name,
         snake_class_name = lcname,
     )?;
 
-    for (prop_name, prop) in o.properties.iter() {
+    for (prop_name, prop) in obj.properties.iter() {
         if let Type::Object(object) = &prop.property_type {
-            writeln!(
-                w,
-                "*{prop_name} {snake_class_name}_{snake_prop_name};",
-                prop_name = prop_name,
-                snake_class_name = lcname,
-                snake_prop_name = snake_case(prop_name),
-            )?;
-
             write_extern_typedefs(w, object, conf)?;
         } else {
             writeln!(
@@ -84,12 +77,12 @@ fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
                 "void (*{snake_class_name}_{p_name}_changed)({class_name}*);",
                 snake_class_name = lcname,
                 p_name = snake_case(prop_name),
-                class_name = o.name,
+                class_name = obj.name,
             )?;
         }
     }
 
-    match o.object_type {
+    match obj.object_type {
         ObjectType::List => {
             write!(
                 w,
@@ -106,7 +99,7 @@ fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
              void (*{snake_class_name}_end_move_rows)({class_name}*);
              void (*{snake_class_name}_begin_remove_rows)({class_name}*, int, int);
              void (*{snake_class_name}_end_remove_rows)({class_name}*);",
-                class_name = o.name,
+                class_name = obj.name,
                 snake_class_name = lcname,
             )?;
         }
