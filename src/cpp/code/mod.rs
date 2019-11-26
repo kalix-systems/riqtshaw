@@ -271,28 +271,7 @@ fn write_cpp_object(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
         o.name, lcname
     )?;
 
-    if o.object_type != ObjectType::Object {
-        writeln!(w, "void {}::initHeaderData() {{", o.name)?;
-
-        for col in 0..o.column_count() {
-            for (name, ip) in &o.item_properties {
-                let empty = Vec::new();
-
-                let roles = ip.roles.get(col).unwrap_or(&empty);
-
-                if roles.contains(&"display".to_string()) {
-                    writeln!(
-                        w,
-                        "    m_headerData.insert(qMakePair({}, Qt::DisplayRole), QVariant(\"{}\"));",
-                        col,
-                        name
-                    )?;
-                }
-            }
-        }
-
-        writeln!(w, "}}")?;
-    }
+    write_abstract_item_header_data_function(o, w)?;
 
     write_cpp_object_properties(w, o, &lcname)?;
 

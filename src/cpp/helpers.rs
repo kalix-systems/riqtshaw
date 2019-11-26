@@ -69,6 +69,32 @@ pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     Ok(())
 }
 
+pub(super) fn write_abstract_item_header_data_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
+    if o.object_type == ObjectType::Object {
+        return Ok(());
+    };
+
+    writeln!(w, "void {}::initHeaderData() {{", o.name)?;
+    for col in 0..o.column_count() {
+        for (name, ip) in &o.item_properties {
+            let empty = Vec::new();
+
+            let roles = ip.roles.get(col).unwrap_or(&empty);
+
+            if roles.contains(&"display".to_string()) {
+                writeln!(
+                    w,
+                    "m_headerData.insert(qMakePair({}, Qt::DisplayRole), QVariant(\"{}\"));",
+                    col, name
+                )?;
+            }
+        }
+    }
+    writeln!(w, "}}")?;
+
+    Ok(())
+}
+
 pub(super) fn write_abstract_item_flags_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     writeln!(
         w,
@@ -83,7 +109,7 @@ Qt::ItemFlags {0}::flags(const QModelIndex &i) const {{ auto flags = QAbstractIt
             writeln!(w, "        flags |= Qt::ItemIsEditable;\n    }}")?;
         }
     }
-    writeln!(w, "    return flags;\n}}\n")?;
+    writeln!(w, " return flags;\n}}\n")?;
 
     Ok(())
 }
