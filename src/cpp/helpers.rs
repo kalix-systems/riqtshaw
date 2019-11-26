@@ -69,7 +69,26 @@ pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn write_qaim_data_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
+pub(super) fn write_abstract_item_flags_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
+    writeln!(
+        w,
+        "
+Qt::ItemFlags {0}::flags(const QModelIndex &i) const {{ auto flags = QAbstractItemModel::flags(i);",
+        o.name
+    )?;
+
+    for col in 0..o.column_count() {
+        if is_column_write(o, col) {
+            writeln!(w, "    if (i.column() == {}) {{", col)?;
+            writeln!(w, "        flags |= Qt::ItemIsEditable;\n    }}")?;
+        }
+    }
+    writeln!(w, "    return flags;\n}}\n")?;
+
+    Ok(())
+}
+
+pub(super) fn write_abstract_item_role_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     writeln!(
         w,
         "int {}::role(const char* name) const {{

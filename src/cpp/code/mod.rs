@@ -369,7 +369,7 @@ fn write_cpp_model(w: &mut Vec<u8>, o: &Object) -> Result<()> {
 
     writeln!(
         w,
-        "    void {}_sort({}::Private*, unsigned char column, Qt::SortOrder order = Qt::AscendingOrder);",
+        "void {}_sort({}::Private*, unsigned char column, Qt::SortOrder order = Qt::AscendingOrder);",
         lcname,
         o.name
     )?;
@@ -398,21 +398,11 @@ fn write_cpp_model(w: &mut Vec<u8>, o: &Object) -> Result<()> {
 void {0}::sort(int column, Qt::SortOrder order)
 {{
     {1}_sort(m_d, column, order);
-}}
-Qt::ItemFlags {0}::flags(const QModelIndex &i) const
-{{
-    auto flags = QAbstractItemModel::flags(i);",
+}}",
         o.name, lcname
     )?;
 
-    for col in 0..o.column_count() {
-        if is_column_write(o, col) {
-            writeln!(w, "    if (i.column() == {}) {{", col)?;
-            writeln!(w, "        flags |= Qt::ItemIsEditable;\n    }}")?;
-        }
-    }
-
-    writeln!(w, "    return flags;\n}}\n")?;
+    write_abstract_item_flags_function(o, w)?;
 
     for ip in &o.item_properties {
         write_model_getter_setter(w, index, ip.0, ip.1, o)?;
@@ -474,7 +464,7 @@ Qt::ItemFlags {0}::flags(const QModelIndex &i) const
 }}"
     )?;
 
-    write_qaim_data_function(o, w)?;
+    write_abstract_item_role_function(o, w)?;
 
     writeln!(
     w,"
