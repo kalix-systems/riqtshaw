@@ -10,19 +10,16 @@ pub(super) fn write_model_getter_setter(
     item_prop: &ItemProperty,
     obj: &Object,
 ) -> Result<()> {
-    let mut idx = index;
-
-    // getter
     let read_type = property_type(item_prop);
 
-    match obj.object_type {
+    let idx = match obj.object_type {
         ObjectType::List => {
-            idx = ", row";
             writeln!(
                 write_buf,
                 "{} {}::{}(int row) const\n{{",
                 read_type, obj.name, name
             )?;
+            ", row"
         }
         ObjectType::Tree => {
             writeln!(
@@ -30,9 +27,10 @@ pub(super) fn write_model_getter_setter(
                 "{} {}::{}(const QModelIndex& index) const\n{{",
                 read_type, obj.name, name
             )?;
+            index
         }
         _ => unreachable!(),
-    }
+    };
 
     match item_prop.item_property_type {
         Type::Simple(SimpleType::QString) => {
