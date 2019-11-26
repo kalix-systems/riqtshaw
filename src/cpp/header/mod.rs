@@ -30,16 +30,21 @@ pub fn write_header(conf: &Config) -> Result<()> {
             |header_buf, conf| {
                 for object in conf.objects.values() {
                     // typedef struct
-                    block(
-                        header_buf,
-                        &format!("typedef struct {}PtrBundle", object.name),
-                        &format!("{}PtrBundle;", object.name),
-                        |header_buf, _| {
-                            write_extern_typedefs(header_buf, object, conf)?;
-                            Ok(())
-                        },
-                        (),
-                    )?;
+                    let mut typedef_block = Block::new();
+
+                    typedef_block.before(format!("typedef struct {}PtrBundle", object.name));
+                    write_extern_typedefs(&mut typedef_block, object)?;
+
+                    typedef_block.after(format!("{}PtrBundle;", object.name));
+
+                    writeln!(header_buf, "{}", typedef_block)?;
+                    //block(
+                    //    header_buf,
+                    //    &format!("typedef struct {}PtrBundle", object.name),
+                    //    &format!("{}PtrBundle;", object.name),
+                    //    |header_buf, _| Ok(()),
+                    //    (),
+                    //)?;
                 }
                 Ok(())
             },
@@ -58,34 +63,31 @@ pub fn write_header(conf: &Config) -> Result<()> {
     Ok(())
 }
 
-fn write_extern_typedefs(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result<()> {
+fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
     let lcname = snake_case(&obj.name);
 
-    writeln!(
-        w,
+    block.line(format!(
         "{class_name}* {snake_class_name};",
         class_name = obj.name,
         snake_class_name = lcname,
-    )?;
+    ));
 
     for (prop_name, prop) in obj.properties.iter() {
         if let Type::Object(object) = &prop.property_type {
-            write_extern_typedefs(w, object, conf)?;
+            write_extern_typedefs(block, object)?;
         } else {
-            writeln!(
-                w,
+            block.line(format!(
                 "void (*{snake_class_name}_{p_name}_changed)({class_name}*);",
                 snake_class_name = lcname,
                 p_name = snake_case(prop_name),
                 class_name = obj.name,
-            )?;
+            ));
         }
     }
 
     match obj.object_type {
         ObjectType::List => {
-            write!(
-                w,
+            block.line(format!(
                 "
              void (*{snake_class_name}_new_data_ready)(const {class_name}*);
              void (*{snake_class_name}_layout_about_to_be_changed)({class_name}*);
@@ -101,13 +103,11 @@ fn write_extern_typedefs(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result
              void (*{snake_class_name}_end_remove_rows)({class_name}*);",
                 class_name = obj.name,
                 snake_class_name = lcname,
-            )?;
+            ));
         }
         ObjectType::Object => {}
         ObjectType::Tree => unimplemented!(),
     }
-
-    writeln!(w, "")?;
 
     Ok(())
 }

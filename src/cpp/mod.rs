@@ -11,6 +11,9 @@ pub use header::write_header;
 mod code;
 pub use code::write_cpp;
 
+mod codegen;
+use self::codegen::Block;
+
 mod helpers;
 use helpers::*;
 
