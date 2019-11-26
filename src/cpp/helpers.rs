@@ -241,7 +241,7 @@ fn write_function_c_decl(
     Ok(())
 }
 
-pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
+pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object) -> Result<()> {
     let lcname = snake_case(&o.name);
 
     write!(w, "{}::Private* {}_new({0}PtrBundle*);", o.name, lcname)?;
@@ -305,61 +305,6 @@ pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) ->
     for f in &o.functions {
         write_function_c_decl(w, f, &lcname, o)?;
     }
-    Ok(())
-}
-
-fn constructor_args_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
-    write!(w, "{}*", o.name)?;
-
-    for p in o.properties.values() {
-        if let Type::Object(object) = &p.property_type {
-            write!(w, ", ")?;
-            constructor_args_decl(w, object, conf)?;
-        } else {
-            writeln!(w, ", void (*)({}*)", o.name)?;
-        }
-    }
-
-    if o.object_type == ObjectType::List {
-        write!(
-            w,
-            ",
-        void (*)(const {}*),
-        void (*)({0}*),
-        void (*)({0}*),
-        void (*)({0}*, quintptr, quintptr),
-        void (*)({0}*),
-        void (*)({0}*),
-        void (*)({0}*, int, int),
-        void (*)({0}*),
-        void (*)({0}*, int, int, int),
-        void (*)({0}*),
-        void (*)({0}*, int, int),
-        void (*)({0}*)",
-            o.name
-        )?;
-    }
-
-    if o.object_type == ObjectType::Tree {
-        write!(
-            w,
-            ",
-        void (*)(const {0}*, option_quintptr),
-        void (*)({0}*),
-        void (*)({0}*),
-        void (*)({0}*, quintptr, quintptr),
-        void (*)({0}*),
-        void (*)({0}*),
-        void (*)({0}*, option_quintptr, int, int),
-        void (*)({0}*),
-        void (*)({0}*, option_quintptr, int, int, option_quintptr, int),
-        void (*)({0}*),
-        void (*)({0}*, option_quintptr, int, int),
-        void (*)({0}*)",
-            o.name
-        )?;
-    }
-
     Ok(())
 }
 

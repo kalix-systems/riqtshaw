@@ -75,10 +75,7 @@ pub fn write_cpp(conf: &Config) -> Result<()> {
             &mut write_buf,
             "extern \"C\"",
             "",
-            |write_buf, _| {
-                write_object_c_decl(write_buf, o, conf)?;
-                Ok(())
-            },
+            |write_buf, _| write_object_c_decl(write_buf, o),
             (),
         )?;
     }
