@@ -573,34 +573,45 @@ bool {0}::setHeaderData(int section, Qt::Orientation orientation, const QVariant
     Ok(())
 }
 
-fn constructor_args(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) -> Result<()> {
-    let lcname = snake_case(&o.name);
-
-    for (name, prop) in &o.properties {
+fn constructor_args(
+    write_buf: &mut Vec<u8>,
+    prefix: &str,
+    obj: &Object,
+    conf: &Config,
+) -> Result<()> {
+    for (name, prop) in obj.properties.iter() {
         if let Type::Object(object) = &prop.property_type {
-            write!(w, ", {}m_{}", prefix, name)?;
-            constructor_args(w, &format!("m_{}->", name), object, conf)?;
+            write!(
+                write_buf,
+                ", {prefix}m_{name}",
+                prefix = prefix,
+                name = name
+            )?;
+            constructor_args(write_buf, &format!("m_{}->", name), object, conf)?;
         } else {
-            write!(w, ",\n        {}", changed_f(o, name))?;
+            write!(write_buf, ",\n        {}", changed_f(obj, name))?;
         }
     }
-    if o.object_type == ObjectType::List {
-        writeln!(
-            w,
-            include_str!("../cpp/list_constructor_lambdas.cpp_string"),
-            name = o.name,
-            col_count = o.column_count() - 1
-        )?;
-    }
 
-    if o.object_type == ObjectType::Tree {
-        writeln!(
-            w,
-            include_str!("../cpp/tree_constructor_lambdas.cpp_string"),
-            name = o.name,
-            snake_case_class_name = lcname,
-            col_count = o.column_count() - 1
-        )?;
+    match obj.object_type {
+        ObjectType::List => {
+            writeln!(
+                write_buf,
+                include_str!("../cpp/list_constructor_lambdas.cpp_string"),
+                name = obj.name,
+                col_count = obj.column_count() - 1
+            )?;
+        }
+        ObjectType::Tree => {
+            writeln!(
+                write_buf,
+                include_str!("../cpp/tree_constructor_lambdas.cpp_string"),
+                name = obj.name,
+                snake_case_class_name = snake_case(&obj.name),
+                col_count = obj.column_count() - 1
+            )?;
+        }
+        _ => {}
     }
 
     // add_factory_lambdas(w, o)?;
