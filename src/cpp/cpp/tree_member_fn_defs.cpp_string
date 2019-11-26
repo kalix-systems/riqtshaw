@@ -1,0 +1,103 @@
+    int {1}_row_count(const {0}::Private*, option_quintptr);
+    bool {1}_can_fetch_more(const {0}::Private*, option_quintptr);
+    void {1}_fetch_more({0}::Private*, option_quintptr);
+    quintptr {1}_index(const {0}::Private*, option_quintptr, int);
+    qmodelindex_t {1}_parent(const {0}::Private*, quintptr);
+    int {1}_row(const {0}::Private*, quintptr);
+    option_quintptr {1}_check_row(const {0}::Private*, quintptr, int);
+}}
+int {0}::columnCount(const QModelIndex &) const
+{{
+    return {2};
+}}
+
+bool {0}::hasChildren(const QModelIndex &parent) const
+{{
+    return rowCount(parent) > 0;
+}}
+
+int {0}::rowCount(const QModelIndex &parent) const
+{{
+    if (parent.isValid() && parent.column() != 0) {{
+        return 0;
+    }}
+    const option_quintptr rust_parent = {{
+        parent.internalId(),
+        parent.isValid()
+    }};
+    return {1}_row_count(m_d, rust_parent);
+}}
+
+bool {0}::insertRows(int, int, const QModelIndex &)
+{{
+    return false; // not supported yet
+}}
+
+bool {0}::removeRows(int, int, const QModelIndex &)
+{{
+    return false; // not supported yet
+}}
+
+QModelIndex {0}::index(int row, int column, const QModelIndex &parent) const
+{{
+    if (row < 0 || column < 0 || column >= {2}) {{
+        return QModelIndex();
+    }}
+    if (parent.isValid() && parent.column() != 0) {{
+        return QModelIndex();
+    }}
+    if (row >= rowCount(parent)) {{
+        return QModelIndex();
+    }}
+    const option_quintptr rust_parent = {{
+        parent.internalId(),
+        parent.isValid()
+    }};
+    const quintptr id = {1}_index(m_d, rust_parent, row);
+    return createIndex(row, column, id);
+}}
+
+QModelIndex {0}::parent(const QModelIndex &index) const
+{{
+    if (!index.isValid()) {{
+        return QModelIndex();
+    }}
+    const qmodelindex_t parent = {1}_parent(m_d, index.internalId());
+    return parent.row >= 0 ?createIndex(parent.row, 0, parent.id) :QModelIndex();
+}}
+
+bool {0}::canFetchMore(const QModelIndex &parent) const
+{{
+    if (parent.isValid() && parent.column() != 0) {{
+        return false;
+    }}
+    const option_quintptr rust_parent = {{
+        parent.internalId(),
+        parent.isValid()
+    }};
+    return {1}_can_fetch_more(m_d, rust_parent);
+}}
+
+void {0}::fetchMore(const QModelIndex &parent)
+{{
+    const option_quintptr rust_parent = {{
+        parent.internalId(),
+        parent.isValid()
+    }};
+    {1}_fetch_more(m_d, rust_parent);
+}}
+void {0}::updatePersistentIndexes() {{
+    const auto from = persistentIndexList();
+    auto to = from;
+    auto len = to.size();
+    for (int i = 0; i < len; ++i) {{
+        auto index = to.at(i);
+        auto row = {1}_check_row(m_d, index.internalId(), index.row());
+        if (row.some) {{
+            to[i] = createIndex(row.value, index.column(), index.internalId());
+        }} else {{
+            to[i] = QModelIndex();
+        }}
+    }}
+    changePersistentIndexList(from, to);
+}}

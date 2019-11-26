@@ -1,5 +1,5 @@
+use super::helpers::*;
 use super::*;
-
 mod model_getter_setter;
 use model_getter_setter::write_model_getter_setter;
 
@@ -226,13 +226,12 @@ fn write_cpp_object(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     )?;
 
     if o.object_type != ObjectType::Object {
-        writeln!(w, "    initHeaderData();")?;
+        writeln!(w, "initHeaderData();")?;
     }
 
     writeln!(
         w,
         "}}
-
 {}::{0}(QObject *parent):
     {}(parent),",
         o.name,
@@ -359,52 +358,14 @@ fn write_cpp_object(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
 fn write_cpp_model(w: &mut Vec<u8>, o: &Object) -> Result<()> {
     let lcname = snake_case(&o.name);
 
-    let (index_decl, index) = if o.object_type == ObjectType::Tree {
-        (", quintptr", ", index.internalId()")
+    let index = if o.object_type == ObjectType::Tree {
+        "index.internalId()"
     } else {
-        (", int", ", index.row()")
+        "index.row()"
     };
-
     writeln!(w, "extern \"C\" {{")?;
 
-    for (name, ip) in &o.item_properties {
-        if ip.is_complex() {
-            writeln!(
-                w,
-                "    void {}_data_{}(const {}::Private*{}, {});",
-                lcname,
-                snake_case(name),
-                o.name,
-                index_decl,
-                ip.c_get_type()
-            )?;
-        } else {
-            writeln!(
-                w,
-                "    {} {}_data_{}(const {}::Private*{});",
-                ip.cpp_set_type(),
-                lcname,
-                snake_case(name),
-                o.name,
-                index_decl
-            )?;
-        }
-
-        if ip.write {
-            let a = format!("    bool {}_set_data_{}", lcname, snake_case(name));
-            let b = format!("({}::Private*{}", o.name, index_decl);
-            if ip.type_name() == "QString" {
-                writeln!(w, "{}{}, const ushort* s, int len);", a, b)?;
-            } else if ip.type_name() == "QByteArray" {
-                writeln!(w, "{}{}, const char* s, int len);", a, b)?;
-            } else {
-                writeln!(w, "{}{}, {});", a, b, ip.c_set_type())?;
-            }
-            if ip.optional {
-                writeln!(w, "{}_none{});", a, b)?;
-            }
-        }
-    }
+    define_ffi_getters(o, w)?;
 
     writeln!(
         w,
@@ -416,63 +377,7 @@ fn write_cpp_model(w: &mut Vec<u8>, o: &Object) -> Result<()> {
     if o.object_type == ObjectType::List {
         writeln!(
             w,
-            "
-    int {lowercase_name}_row_count(const {name}::Private*);
-    bool {lowercase_name}_insert_rows({name}::Private*, int, int);
-    bool {lowercase_name}_remove_rows({name}::Private*, int, int);
-    bool {lowercase_name}_can_fetch_more(const {name}::Private*);
-    void {lowercase_name}_fetch_more({name}::Private*);
-}}
-int {name}::columnCount(const QModelIndex &parent) const
-{{
-    return (parent.isValid()) ? 0 : {column_count};
-}}
-
-bool {name}::hasChildren(const QModelIndex &parent) const
-{{
-    return rowCount(parent) > 0;
-}}
-
-int {name}::rowCount(const QModelIndex &parent) const
-{{
-    return (parent.isValid()) ? 0 : {lowercase_name}_row_count(m_d);
-}}
-
-bool {name}::insertRows(int row, int count, const QModelIndex &)
-{{
-    return {lowercase_name}_insert_rows(m_d, row, count);
-}}
-
-bool {name}::removeRows(int row, int count, const QModelIndex &)
-{{
-    return {lowercase_name}_remove_rows(m_d, row, count);
-}}
-
-QModelIndex {name}::index(int row, int column, const QModelIndex &parent) const
-{{
-    if (!parent.isValid() && row >= 0 && row < rowCount(parent) && column >= 0 && column < {column_count}) {{
-        return createIndex(row, column, static_cast<quintptr>(row));
-    }}
-    return QModelIndex();
-}}
-
-QModelIndex {name}::parent(const QModelIndex &) const
-{{
-    return QModelIndex();
-}}
-
-bool {name}::canFetchMore(const QModelIndex &parent) const
-{{
-    return (parent.isValid()) ? 0 : {lowercase_name}_can_fetch_more(m_d);
-}}
-
-void {name}::fetchMore(const QModelIndex &parent)
-{{
-    if (!parent.isValid()) {{
-        {lowercase_name}_fetch_more(m_d);
-    }}
-}}
-void {name}::updatePersistentIndexes() {{}}",
+            include_str!("../cpp/list_member_fn_defs.cpp_string"),
             name = o.name,
             lowercase_name = lcname,
             column_count = o.column_count()
@@ -480,115 +385,13 @@ void {name}::updatePersistentIndexes() {{}}",
     } else {
         writeln!(
             w,
-            "
-    int {1}_row_count(const {0}::Private*, option_quintptr);
-    bool {1}_can_fetch_more(const {0}::Private*, option_quintptr);
-    void {1}_fetch_more({0}::Private*, option_quintptr);
-    quintptr {1}_index(const {0}::Private*, option_quintptr, int);
-    qmodelindex_t {1}_parent(const {0}::Private*, quintptr);
-    int {1}_row(const {0}::Private*, quintptr);
-    option_quintptr {1}_check_row(const {0}::Private*, quintptr, int);
-}}
-int {0}::columnCount(const QModelIndex &) const
-{{
-    return {2};
-}}
-
-bool {0}::hasChildren(const QModelIndex &parent) const
-{{
-    return rowCount(parent) > 0;
-}}
-
-int {0}::rowCount(const QModelIndex &parent) const
-{{
-    if (parent.isValid() && parent.column() != 0) {{
-        return 0;
-    }}
-    const option_quintptr rust_parent = {{
-        parent.internalId(),
-        parent.isValid()
-    }};
-    return {1}_row_count(m_d, rust_parent);
-}}
-
-bool {0}::insertRows(int, int, const QModelIndex &)
-{{
-    return false; // not supported yet
-}}
-
-bool {0}::removeRows(int, int, const QModelIndex &)
-{{
-    return false; // not supported yet
-}}
-
-QModelIndex {0}::index(int row, int column, const QModelIndex &parent) const
-{{
-    if (row < 0 || column < 0 || column >= {2}) {{
-        return QModelIndex();
-    }}
-    if (parent.isValid() && parent.column() != 0) {{
-        return QModelIndex();
-    }}
-    if (row >= rowCount(parent)) {{
-        return QModelIndex();
-    }}
-    const option_quintptr rust_parent = {{
-        parent.internalId(),
-        parent.isValid()
-    }};
-    const quintptr id = {1}_index(m_d, rust_parent, row);
-    return createIndex(row, column, id);
-}}
-
-QModelIndex {0}::parent(const QModelIndex &index) const
-{{
-    if (!index.isValid()) {{
-        return QModelIndex();
-    }}
-    const qmodelindex_t parent = {1}_parent(m_d, index.internalId());
-    return parent.row >= 0 ?createIndex(parent.row, 0, parent.id) :QModelIndex();
-}}
-
-bool {0}::canFetchMore(const QModelIndex &parent) const
-{{
-    if (parent.isValid() && parent.column() != 0) {{
-        return false;
-    }}
-    const option_quintptr rust_parent = {{
-        parent.internalId(),
-        parent.isValid()
-    }};
-    return {1}_can_fetch_more(m_d, rust_parent);
-}}
-
-void {0}::fetchMore(const QModelIndex &parent)
-{{
-    const option_quintptr rust_parent = {{
-        parent.internalId(),
-        parent.isValid()
-    }};
-    {1}_fetch_more(m_d, rust_parent);
-}}
-void {0}::updatePersistentIndexes() {{
-    const auto from = persistentIndexList();
-    auto to = from;
-    auto len = to.size();
-    for (int i = 0; i < len; ++i) {{
-        auto index = to.at(i);
-        auto row = {1}_check_row(m_d, index.internalId(), index.row());
-        if (row.some) {{
-            to[i] = createIndex(row.value, index.column(), index.internalId());
-        }} else {{
-            to[i] = QModelIndex();
-        }}
-    }}
-    changePersistentIndexList(from, to);
-}}",
+            include_str!("../cpp/tree_member_fn_defs.cpp_string"),
             o.name,
             lcname,
             o.column_count()
         )?;
     }
+
     writeln!(
         w,
         "
@@ -649,53 +452,32 @@ Qt::ItemFlags {0}::flags(const QModelIndex &i) const
             };
 
             if ip.optional && !ip.is_complex() {
-                writeln!(w, "            return {}(index{});", name, ii)?;
+                writeln!(w, "return {}(index{});", name, ii)?;
             } else if ip.optional {
                 writeln!(
                     w,
-                    "            return cleanNullQVariant(QVariant::fromValue({}(index{})));",
+                    "return cleanNullQVariant(QVariant::fromValue({}(index{})));",
                     name, ii
                 )?;
             } else {
-                writeln!(
-                    w,
-                    "            return QVariant::fromValue({}(index{}));",
-                    name, ii
-                )?;
+                writeln!(w, "return QVariant::fromValue({}(index{}));", name, ii)?;
             }
         }
 
-        writeln!(w, "        }}\n        break;")?;
+        writeln!(w, "}} break;")?;
     }
 
     writeln!(
         w,
         "    }}
     return QVariant();
-}}
-
-int {}::role(const char* name) const {{
-    auto names = roleNames();
-    auto i = names.constBegin();
-    while (i != names.constEnd()) {{
-        if (i.value() == name) {{
-            return i.key();
-        }}
-        ++i;
-    }}
-    return -1;
-}}
-QHash<int, QByteArray> {0}::roleNames() const {{
-    QHash<int, QByteArray> names = QAbstractItemModel::roleNames();",
-        o.name
+}}"
     )?;
-    for (i, (name, _)) in o.item_properties.iter().enumerate() {
-        writeln!(w, "    names.insert(Qt::UserRole + {}, \"{}\");", i, name)?;
-    }
+
+    write_qaim_data_function(o, w)?;
+
     writeln!(
-        w,
-        "    return names;
-}}
+    w,"
 QVariant {0}::headerData(int section, Qt::Orientation orientation, int role) const
 {{
     if (orientation != Qt::Horizontal) {{
@@ -786,16 +568,16 @@ bool {0}::setHeaderData(int section, Qt::Orientation orientation, const QVariant
                         ip.type_name()
                     )?;
 
-                    writeln!(w, "            }}")?;
+                    writeln!(w, "}}")?;
                 }
 
-                writeln!(w, "        }}")?;
+                writeln!(w, "}}")?;
             }
 
-            writeln!(w, "    }}")?;
+            writeln!(w, "}}")?;
         }
 
-        writeln!(w, "    return false;\n}}\n")?;
+        writeln!(w, "return false;\n}}\n")?;
     }
 
     Ok(())
