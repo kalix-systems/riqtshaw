@@ -1,0 +1,56 @@
+    int {lowercase_name}_row_count(const {name}::Private*);
+    bool {lowercase_name}_insert_rows({name}::Private*, int, int);
+    bool {lowercase_name}_remove_rows({name}::Private*, int, int);
+    bool {lowercase_name}_can_fetch_more(const {name}::Private*);
+    void {lowercase_name}_fetch_more({name}::Private*);
+}}
+int {name}::columnCount(const QModelIndex &parent) const
+{{
+    return (parent.isValid()) ? 0 : {column_count};
+}}
+
+bool {name}::hasChildren(const QModelIndex &parent) const
+{{
+    return rowCount(parent) > 0;
+}}
+
+int {name}::rowCount(const QModelIndex &parent) const
+{{
+    return (parent.isValid()) ? 0 : {lowercase_name}_row_count(m_d);
+}}
+
+bool {name}::insertRows(int row, int count, const QModelIndex &)
+{{
+    return {lowercase_name}_insert_rows(m_d, row, count);
+}}
+
+bool {name}::removeRows(int row, int count, const QModelIndex &)
+{{
+    return {lowercase_name}_remove_rows(m_d, row, count);
+}}
+
+QModelIndex {name}::index(int row, int column, const QModelIndex &parent) const
+{{
+    if (!parent.isValid() && row >= 0 && row < rowCount(parent) && column >= 0 && column < {column_count}) {{
+        return createIndex(row, column, static_cast<quintptr>(row));
+    }}
+    return QModelIndex();
+}}
+
+QModelIndex {name}::parent(const QModelIndex &) const
+{{
+    return QModelIndex();
+}}
+
+bool {name}::canFetchMore(const QModelIndex &parent) const
+{{
+    return (parent.isValid()) ? 0 : {lowercase_name}_can_fetch_more(m_d);
+}}
+
+void {name}::fetchMore(const QModelIndex &parent)
+{{
+    if (!parent.isValid()) {{
+        {lowercase_name}_fetch_more(m_d);
+    }}
+}}
+void {name}::updatePersistentIndexes() {{}}

@@ -17,6 +17,84 @@ pub(super) fn block<T, F: Fn(&mut Vec<u8>, T) -> Result<()>>(
     Ok(())
 }
 
+pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
+    // define ffi getters for from-rust FFI types
+    let index_decl = if o.object_type == ObjectType::Tree {
+        "quintptr"
+    } else {
+        "int"
+    };
+
+    let lcname = snake_case(&o.name);
+
+    for (obj_name, item_prop) in &o.item_properties {
+        if item_prop.is_complex() {
+            writeln!(
+            w,
+            "void {snake_class_name}_data_{prop_name}(const {camel_class_name}::Private*, {index_type}, {prop_type});",
+            snake_class_name = lcname,
+            prop_name = snake_case(obj_name),
+            camel_class_name = o.name,
+            index_type = index_decl,
+            prop_type = item_prop.c_get_type()
+        )?;
+        } else {
+            writeln!(
+            w,
+            "{return_type} {snake_class_name}_data_{snake_data_name}(const {camel_class_name}::Private*, {prop_type});",
+            return_type = item_prop.cpp_set_type(),
+            snake_class_name = lcname,
+            snake_data_name = snake_case(obj_name),
+            camel_class_name = o.name,
+            prop_type =  index_decl
+        )?;
+        }
+
+        if item_prop.write {
+            let a = format!("bool {}_set_data_{}", lcname, snake_case(obj_name));
+            let b = format!("({}::Private*, {}", o.name, index_decl);
+            if item_prop.type_name() == "QString" {
+                writeln!(w, "{}{}, const ushort* s, int len);", a, b)?;
+            } else if item_prop.type_name() == "QByteArray" {
+                writeln!(w, "{}{}, const char* s, int len);", a, b)?;
+            } else {
+                writeln!(w, "{}{}, {});", a, b, item_prop.c_set_type())?;
+            }
+            if item_prop.optional {
+                writeln!(w, "{}_none{});", a, b)?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub(super) fn write_qaim_data_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
+    writeln!(
+        w,
+        "int {}::role(const char* name) const {{
+    auto names = roleNames();
+    auto i = names.constBegin();
+    while (i != names.constEnd()) {{
+        if (i.value() == name) {{
+            return i.key();
+        }}
+        ++i;
+    }}
+    return -1;
+}}
+QHash<int, QByteArray> {0}::roleNames() const {{
+    QHash<int, QByteArray> names = QAbstractItemModel::roleNames();",
+        o.name
+    )?;
+    for (i, (name, _)) in o.item_properties.iter().enumerate() {
+        writeln!(w, "    names.insert(Qt::UserRole + {}, \"{}\");", i, name)?;
+    }
+    writeln!(w, "return names;}}")?;
+
+    Ok(())
+}
+
 pub(super) fn property_type(prop: &ItemProperty) -> String {
     if prop.optional && !prop.item_property_type.is_complex() {
         return "QVariant".into();
