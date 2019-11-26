@@ -23,6 +23,29 @@ pub fn write_header(conf: &Config) -> Result<()> {
             write_type_def(header_buf, name)?;
         }
 
+        block(
+            header_buf,
+            "extern \"C\"",
+            "",
+            |header_buf, conf| {
+                for object in conf.objects.values() {
+                    // typedef struct
+                    block(
+                        header_buf,
+                        &format!("typedef struct {}PtrBundle", object.name),
+                        &format!("{}PtrBundle;", object.name),
+                        |header_buf, _| {
+                            write_extern_typedefs(header_buf, object, conf)?;
+                            Ok(())
+                        },
+                        (),
+                    )?;
+                }
+                Ok(())
+            },
+            conf,
+        )?;
+
         for object in conf.objects.values() {
             write_header_object(header_buf, object, conf)?;
         }
@@ -31,6 +54,50 @@ pub fn write_header(conf: &Config) -> Result<()> {
     })?;
 
     write_if_different(h_file, &header_buf)?;
+
+    Ok(())
+}
+
+fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
+    let lcname = snake_case(&o.name);
+
+    for p in o.properties.values() {
+        if let Type::Object(object) = &p.property_type {
+            write_extern_typedefs(w, object, conf)?;
+        } else {
+            writeln!(
+                w,
+                "void (*)({class_name}*)",
+                class_name = o.name,
+                snake_class_name = lcname,
+            )?;
+        }
+    }
+
+    match o.object_type {
+        ObjectType::List => {
+            write!(
+                w,
+                "
+             void (*{snake_class_name}_new_data_ready)(const {class_name}*);
+             void (*{snake_class_name}_layout_about_to_be_changed)({class_name}*);
+             void (*{snake_class_name}_layout_changed)({class_name}*);
+             void (*{snake_class_name}_data_changed)({class_name}*, quintptr, quintptr);
+             void (*{snake_class_name}_begin_reset_model)({class_name}*);
+             void (*{snake_class_name}_end_reset_model)({class_name}*);
+             void (*{snake_class_name}_begin_insert_rows)({class_name}*, int, int);
+             void (*{snake_class_name}_end_insert_rows)({class_name}*);
+             void (*{snake_class_name}_begin_move_rows)({class_name}*, int, int, int);
+             void (*{snake_class_name}_end_move_rows)({class_name}*);
+             void (*{snake_class_name}_begin_remove_rows)({class_name}*, int, int);
+             void (*{snake_class_name}_end_remove_rows)({class_name}*);",
+                class_name = o.name,
+                snake_class_name = lcname,
+            )?;
+        }
+        ObjectType::Object => {}
+        ObjectType::Tree => unimplemented!(),
+    }
 
     Ok(())
 }
