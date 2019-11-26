@@ -244,11 +244,7 @@ fn write_function_c_decl(
 pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     let lcname = snake_case(&o.name);
 
-    write!(w, "{}::Private* {}_new(", o.name, lcname)?;
-
-    constructor_args_decl(w, o, conf)?;
-
-    writeln!(w, ");")?;
+    write!(w, "{}::Private* {}_new({0}PtrBundle*);", o.name, lcname)?;
 
     writeln!(w, "void {}_free({}::Private*);", lcname, o.name)?;
 

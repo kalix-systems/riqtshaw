@@ -171,7 +171,7 @@ fn constructor_args(
             )?;
             constructor_args(write_buf, &format!("m_{}->", name), object, conf)?;
         } else {
-            write!(write_buf, ",\n        {}", changed_f(obj, name))?;
+            write!(write_buf, ",\n{}", changed_f(obj, name))?;
         }
     }
 
