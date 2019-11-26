@@ -23,33 +23,22 @@ pub fn write_header(conf: &Config) -> Result<()> {
             write_type_def(header_buf, name)?;
         }
 
-        block(
-            header_buf,
-            "extern \"C\"",
-            "",
-            |header_buf, conf| {
-                for object in conf.objects.values() {
-                    // typedef struct
-                    let mut typedef_block = Block::new();
+        let mut extern_block = Block::new();
+        extern_block.before("extern \"C\"");
 
-                    typedef_block.before(format!("typedef struct {}PtrBundle", object.name));
-                    write_extern_typedefs(&mut typedef_block, object)?;
+        for object in conf.objects.values() {
+            // typedef struct
+            let mut typedef_block = Block::new();
 
-                    typedef_block.after(format!("{}PtrBundle;", object.name));
+            typedef_block.before(format!("typedef struct {}PtrBundle", object.name));
+            write_extern_typedefs(&mut typedef_block, object)?;
 
-                    writeln!(header_buf, "{}", typedef_block)?;
-                    //block(
-                    //    header_buf,
-                    //    &format!("typedef struct {}PtrBundle", object.name),
-                    //    &format!("{}PtrBundle;", object.name),
-                    //    |header_buf, _| Ok(()),
-                    //    (),
-                    //)?;
-                }
-                Ok(())
-            },
-            conf,
-        )?;
+            typedef_block.after(format!("{}PtrBundle;", object.name));
+
+            extern_block.push_block(typedef_block);
+        }
+
+        writeln!(header_buf, "{}", extern_block)?;
 
         for object in conf.objects.values() {
             write_header_object(header_buf, object, conf)?;

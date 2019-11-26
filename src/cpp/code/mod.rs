@@ -22,16 +22,13 @@ pub fn write_cpp(conf: &Config) -> Result<()> {
         file_name
     )?;
 
-    block(
-        &mut write_buf,
-        "namespace",
-        "",
-        |write_buf, _| {
-            for option in conf.optional_types() {
-                if option != "QString" && option != "QByteArray" {
-                    writeln!(
-                        write_buf,
-                        "
+    let mut namespace = Block::new();
+    namespace.before("namespace");
+
+    for option in conf.optional_types() {
+        if option != "QString" && option != "QByteArray" {
+            namespace.line(format!(
+                "
         struct option_{} {{
         public:
             {0} value;
@@ -44,40 +41,36 @@ pub fn write_cpp(conf: &Config) -> Result<()> {
             }}
         }};
         static_assert(std::is_pod<option_{0}>::value, \"option_{0} must be a POD type.\");",
-                        option
-                    )?;
-                }
-            }
-            writeln!(write_buf, include_str!("../cpp/complex_types.cpp_string"))?;
+                option
+            ));
+        }
+    }
+    namespace.line(include_str!("../cpp/complex_types.cpp_string"));
 
-            for (name, object) in conf.objects.iter() {
-                for prop_name in object.non_object_property_names() {
-                    writeln!(
-                        write_buf,
-                        "inline void {fn_name}({class_name}* o)",
-                        fn_name = changed_f(object, prop_name),
-                        class_name = name
-                    )?;
-                    writeln!(write_buf, "{{\nQ_EMIT o->{}Changed();\n}}", prop_name)?;
-                }
-            }
-            Ok(())
-        },
-        (),
-    )?;
+    for (name, object) in conf.objects.iter() {
+        for prop_name in object.non_object_property_names() {
+            namespace.line(format!(
+                "inline void {fn_name}({class_name}* o)",
+                fn_name = changed_f(object, prop_name),
+                class_name = name
+            ));
+            namespace.line(format!("{{\nQ_EMIT o->{}Changed();\n}}", prop_name));
+        }
+    }
+
+    writeln!(write_buf, "{}", namespace)?;
 
     for o in conf.objects.values() {
         if o.object_type != ObjectType::Object {
             write_cpp_model(&mut write_buf, o)?;
         }
 
-        block(
-            &mut write_buf,
-            "extern \"C\"",
-            "",
-            |write_buf, _| write_object_c_decl(write_buf, o),
-            (),
-        )?;
+        let mut extern_block = Block::new();
+        extern_block.before("extern \"C\"");
+
+        write_object_c_decl(&mut extern_block, o)?;
+
+        writeln!(write_buf, "{}", extern_block)?;
     }
 
     for o in conf.objects.values() {

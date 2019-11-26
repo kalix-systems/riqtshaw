@@ -1,22 +1,5 @@
 use super::*;
 
-pub(super) fn block<T, F: Fn(&mut Vec<u8>, T) -> Result<()>>(
-    buf: &mut Vec<u8>,
-    before: &str,
-    after: &str,
-    content: F,
-    args: T,
-) -> Result<()> {
-    writeln!(buf, "{} {{", before)?;
-
-    content(buf, args)?;
-
-    writeln!(buf, "}}")?;
-    write!(buf, "{}", after)?;
-
-    Ok(())
-}
-
 pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     // define ffi getters for from-rust FFI types
     let index_decl = if o.object_type == ObjectType::Tree {
@@ -120,7 +103,7 @@ pub(super) fn property_type(prop: &ItemProperty) -> String {
     }
     match &prop.item_property_type {
         Type::Simple(_) => prop.type_name().to_string(),
-        Type::Object(obj) => obj.name.clone() + "Ref".into(),
+        Type::Object(obj) => obj.name.clone() + "Ref",
     }
 }
 
@@ -160,7 +143,7 @@ pub(super) fn get_return_type(prop: &Property) -> String {
         t.push_str("*");
     }
 
-    return t;
+    t
 }
 
 pub(super) fn model_is_writable(o: &Object) -> bool {
@@ -192,7 +175,7 @@ pub(super) fn is_column_write(o: &Object, col: usize) -> bool {
 }
 
 fn write_function_c_decl(
-    w: &mut Vec<u8>,
+    block: &mut Block,
     (name, f): (&String, &Function),
     lcname: &str,
     o: &Object,
@@ -200,30 +183,29 @@ fn write_function_c_decl(
     let lc = snake_case(name);
 
     if f.return_type.is_complex() {
-        write!(w, "void")?;
+        block.line("void");
     } else {
-        write!(w, "{}", f.type_name())?;
+        block.line(f.type_name());
     }
 
     let name = format!("{}_{}", lcname, lc);
 
-    write!(
-        w,
-        " {}({}{}::Private*",
+    block.line(format!(
+        "{}({}{}::Private*",
         name,
         if f.mutable { "" } else { "const " },
         o.name
-    )?;
+    ));
 
     // write all the input arguments, for QString and QByteArray, write
     // pointers to their content and the length
-    for a in &f.arguments {
+    for a in f.arguments.iter() {
         if a.type_name() == "QString" {
-            write!(w, ",const ushort*, int")?;
+            block.line(",const ushort*, int");
         } else if a.type_name() == "QByteArray" {
-            write!(w, ",const char*, int")?;
+            block.line(",const char*, int");
         } else {
-            write!(w, ",{}", a.type_name())?;
+            block.line(format!(",{}", a.type_name()));
         }
     }
 
@@ -231,58 +213,57 @@ fn write_function_c_decl(
     // variable that will be set to the argument list. Also add a setter
     // function.
     if f.return_type.name() == "QString" {
-        write!(w, ", QString*, qstring_set")?;
+        block.line(", QString*, qstring_set");
     } else if f.return_type.name() == "QByteArray" {
-        write!(w, ", QByteArray*, qbytearray_set")?;
+        block.line(", QByteArray*, qbytearray_set");
     }
 
-    writeln!(w, ");")?;
+    block.line(");");
 
     Ok(())
 }
 
-pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object) -> Result<()> {
+pub(super) fn write_object_c_decl(block: &mut Block, o: &Object) -> Result<()> {
     let lcname = snake_case(&o.name);
 
-    write!(w, "{}::Private* {}_new({0}PtrBundle*);", o.name, lcname)?;
+    block.line(format!(
+        "{}::Private* {}_new({0}PtrBundle*);",
+        o.name, lcname
+    ));
 
-    writeln!(w, "void {}_free({}::Private*);", lcname, o.name)?;
+    block.line(format!("void {}_free({}::Private*);", lcname, o.name));
 
     for (prop_name, prop) in &o.properties {
         let base = format!("{}_{}", lcname, snake_case(prop_name));
 
         if prop.is_object() {
-            writeln!(
-                w,
+            block.line(format!(
                 "{}::Private* {}_get(const {}::Private*);",
                 prop.type_name(),
                 base,
                 o.name
-            )?;
+            ));
         } else if prop.is_complex() {
-            writeln!(
-                w,
+            block.line(format!(
                 "void {}_get(const {}::Private*, {});",
                 base,
                 o.name,
                 prop.c_get_type()
-            )?;
+            ));
         } else if prop.optional {
-            writeln!(
-                w,
+            block.line(format!(
                 "option_{} {}_get(const {}::Private*);",
                 prop.type_name(),
                 base,
                 o.name
-            )?;
+            ));
         } else {
-            writeln!(
-                w,
+            block.line(format!(
                 "{} {}_get(const {}::Private*);",
                 prop.type_name(),
                 base,
                 o.name
-            )?;
+            ));
         }
 
         if prop.write {
@@ -294,16 +275,16 @@ pub(super) fn write_object_c_decl(w: &mut Vec<u8>, o: &Object) -> Result<()> {
                 t = "const char* bytes, int len";
             }
 
-            writeln!(w, "    void {}_set({}::Private*, {});", base, o.name, t)?;
+            block.line(format!("void {}_set({}::Private*, {});", base, o.name, t));
 
             if prop.optional {
-                writeln!(w, "    void {}_set_none({}::Private*);", base, o.name)?;
+                block.line(format!("void {}_set_none({}::Private*);", base, o.name));
             }
         }
     }
 
-    for f in &o.functions {
-        write_function_c_decl(w, f, &lcname, o)?;
+    for f in o.functions.iter() {
+        write_function_c_decl(block, f, &lcname, o)?;
     }
     Ok(())
 }

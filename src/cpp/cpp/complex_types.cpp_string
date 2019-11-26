@@ -1,25 +1,25 @@
     typedef void (*qstring_set)(QString* val, const char* utf8, int nbytes);
 
-    void set_qstring(QString* val, const char* utf8, int nbytes) {{
+    void set_qstring(QString* val, const char* utf8, int nbytes) {
         *val = QString::fromUtf8(utf8, nbytes);
-    }}
+    }
 
    typedef void (*qbytearray_set)(QByteArray* val, const char* bytes, int nbytes);
 
-   void set_qbytearray(QByteArray* v, const char* bytes, int nbytes) {{
-        if (v->isNull() && nbytes == 0) {{
+   void set_qbytearray(QByteArray* v, const char* bytes, int nbytes) {
+        if (v->isNull() && nbytes == 0) {
             *v = QByteArray(bytes, nbytes);
-        }} else {{
+        } else {
             v->truncate(0);
             v->append(bytes, nbytes);
-        }}
-    }}
+        }
+    }
 
-   struct qmodelindex_t {{
+   struct qmodelindex_t {
         int row;
         quintptr id;
-    }};
+    };
 
-    inline QVariant cleanNullQVariant(const QVariant& v) {{
+    inline QVariant cleanNullQVariant(const QVariant& v) {
         return (v.isNull()) ?QVariant() :v;
-    }}
+    }
