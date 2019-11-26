@@ -62,7 +62,7 @@ fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
     let lcname = snake_case(&o.name);
     writeln!(
         w,
-        "*{class_name} {snake_class_name};",
+        "{class_name}* {snake_class_name};",
         class_name = o.name,
         snake_class_name = lcname,
     )?;
