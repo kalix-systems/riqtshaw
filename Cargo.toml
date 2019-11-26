@@ -7,7 +7,6 @@ edition = "2018"
 
 [dependencies]
 regex= "1"
-cbindgen = "0.10.0"
 
 [dependencies.codegen]
 git = "https://github.com/kalix-systems/codegen"

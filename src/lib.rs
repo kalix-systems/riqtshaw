@@ -12,7 +12,6 @@ use std::error::Error;
 pub fn generate_bindings(config: &Config) -> Result<(), Box<dyn Error>> {
     rust::write_interface(config)?;
 
-    cpp::write_raw_header(config)?;
     cpp::write_header(config)?;
     cpp::write_cpp(config)?;
     Ok(())

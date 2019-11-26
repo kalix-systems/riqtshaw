@@ -5,7 +5,7 @@ pub(crate) fn ptr_bundle(object: &Object) -> Struct {
     let name = &object.name;
     let mut bundle = Struct::new(&format!("{}PtrBundle", name));
 
-    bundle.repr("C").allow("unused");
+    bundle.repr("C").allow("unused").vis("pub");
     fields(object, &name, &mut bundle);
 
     bundle
