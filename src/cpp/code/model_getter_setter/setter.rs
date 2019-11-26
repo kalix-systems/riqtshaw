@@ -8,8 +8,6 @@ pub(super) fn item_prop_write(
     mut read_type: String,
     mut idx: &str,
 ) -> Result<()> {
-    let lcname = snake_case(&obj.name);
-
     if read_type == "QVariant" || item_prop.is_complex() {
         read_type = format!("const {}&", read_type);
     }
@@ -40,49 +38,9 @@ pub(super) fn item_prop_write(
     writeln!(write_buf, "bool set = false;")?;
 
     if item_prop.optional {
-        let mut test = "value.isNull()".to_string();
-        if !item_prop.is_complex() {
-            test += " || !value.isValid()";
-        }
-
-        writeln!(write_buf, "    if ({}) {{", test)?;
-
-        writeln!(
-            write_buf,
-            "        set = {}_set_data_{}_none(m_d{});",
-            lcname,
-            snake_case(name),
-            idx
-        )?;
-
-        writeln!(write_buf, "    }} else {{")?;
-    }
-
-    if item_prop.optional && !item_prop.is_complex() {
-        optional_non_complex(write_buf, item_prop, name, idx, obj)?;
+        optional(write_buf, item_prop, name, idx, obj, setter_body)?;
     } else {
-        let mut val = "value";
-
-        if item_prop.is_complex() {
-            if item_prop.type_name() == "QString" {
-                val = "value.utf16(), value.length()";
-            } else {
-                val = "value.data(), value.length()";
-            }
-        }
-
-        writeln!(
-            write_buf,
-            "    set = {}_set_data_{}(m_d{}, {});",
-            lcname,
-            snake_case(name),
-            idx,
-            val
-        )?;
-    }
-
-    if item_prop.optional {
-        writeln!(write_buf, "    }}")?;
+        setter_body(write_buf, item_prop, name, idx, obj)?;
     }
 
     match obj.object_type {
@@ -142,4 +100,67 @@ fn optional_non_complex(
     )?;
 
     Ok(())
+}
+
+fn optional<F: Fn(&mut Vec<u8>, &ItemProperty, &str, &str, &Object) -> Result<()>>(
+    write_buf: &mut Vec<u8>,
+    item_prop: &ItemProperty,
+    name: &str,
+    idx: &str,
+    obj: &Object,
+    content: F,
+) -> Result<()> {
+    let test = if item_prop.is_complex() {
+        "value.isNull()"
+    } else {
+        "value.isNull() || !value.isValid()"
+    };
+
+    writeln!(write_buf, "    if ({}) {{", test)?;
+
+    writeln!(
+        write_buf,
+        "        set = {}_set_data_{}_none(m_d{});",
+        snake_case(&obj.name),
+        snake_case(name),
+        idx
+    )?;
+
+    writeln!(write_buf, "    }} else {{")?;
+
+    content(write_buf, item_prop, name, idx, obj)?;
+
+    writeln!(write_buf, "    }}")?;
+    Ok(())
+}
+
+fn setter_body(
+    write_buf: &mut Vec<u8>,
+    item_prop: &ItemProperty,
+    name: &str,
+    idx: &str,
+    obj: &Object,
+) -> Result<()> {
+    if item_prop.optional && !item_prop.is_complex() {
+        optional_non_complex(write_buf, item_prop, name, idx, obj)?;
+
+        Ok(())
+    } else {
+        let val = match item_prop.item_property_type {
+            Type::Simple(SimpleType::QString) => "value.utf16(), value.length()",
+            Type::Simple(SimpleType::QByteArray) => "value.data(), value.length()",
+            _ => "value",
+        };
+
+        writeln!(
+            write_buf,
+            "    set = {}_set_data_{}(m_d{}, {});",
+            snake_case(&obj.name),
+            snake_case(name),
+            idx,
+            val
+        )?;
+
+        Ok(())
+    }
 }
