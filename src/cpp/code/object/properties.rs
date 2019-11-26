@@ -1,132 +1,173 @@
 use super::*;
 
-pub(super) fn properties(w: &mut Vec<u8>, obj: &Object) -> Result<()> {
+pub(super) fn properties(write_buf: &mut Vec<u8>, obj: &Object) -> Result<()> {
     let lcname = snake_case(&obj.name);
 
-    for (name, p) in obj.properties.iter() {
+    for (name, prop) in obj.properties.iter() {
         let base = format!("{}_{}", lcname, snake_case(name));
 
-        if p.is_object() {
-            writeln!(
-                w,
-                "
-const {}* {}::{}() const
-{{
-    return m_{2};
-}}
-{0}* {1}::{2}()
-{{
-    return m_{2};
-}}",
-                p.type_name(),
-                obj.name,
-                name
-            )?;
-        } else if p.is_complex() {
-            writeln!(
-                w,
-                "
-{} {}::{}() const
-{{
-    {0} v;
-    {3}_get(m_d, &v, set_{4});
-    return v;
-}}",
-                p.type_name(),
-                obj.name,
-                name,
-                base,
-                p.type_name().to_lowercase()
-            )?;
-        } else if p.optional {
-            writeln!(
-                w,
-                "
-QVariant {}::{}() const
-{{
-    QVariant v;
-    auto r = {2}_get(m_d);
-    if (r.some) {{
-        v.setValue(r.value);
-    }}
-    return r;
-}}",
-                obj.name, name, base
-            )?;
+        if prop.is_object() {
+            object(write_buf, obj, name, prop)?;
+        } else if prop.is_complex() {
+            complex(write_buf, obj, name, prop)?;
+        } else if prop.optional {
+            non_complex_optional(write_buf, obj, name)?;
         } else {
-            writeln!(
-                w,
-                "
-{} {}::{}() const
-{{
-    return {}_get(m_d);
-}}",
-                p.type_name(),
-                obj.name,
-                name,
-                base
-            )?;
+            non_complex_non_optional(write_buf, obj, name, prop)?;
         }
 
-        if p.write {
-            let t = if p.optional && !p.is_complex() {
+        if prop.write {
+            let t = if prop.optional && !prop.is_complex() {
                 "const QVariant&"
             } else {
-                p.property_type.cpp_set_type()
+                prop.property_type.cpp_set_type()
             };
 
             writeln!(
-                w,
+                write_buf,
                 "void {}::set{}({} v) {{",
                 obj.name,
                 upper_initial(name),
                 t
             )?;
 
-            if p.optional {
-                if p.is_complex() {
-                    writeln!(w, "if (v.isNull()) {{")?;
+            if prop.optional {
+                if prop.is_complex() {
+                    writeln!(write_buf, "if (v.isNull()) {{")?;
                 } else {
                     writeln!(
-                        w,
+                        write_buf,
                         "if (v.isNull() || !v.canConvert<{}>()) {{",
-                        p.type_name()
+                        prop.type_name()
                     )?;
                 }
 
-                writeln!(w, "{}_set_none(m_d);", base)?;
+                writeln!(write_buf, "{}_set_none(m_d);", base)?;
 
-                writeln!(w, "}} else {{")?;
+                writeln!(write_buf, "}} else {{")?;
 
-                if p.type_name() == "QString" {
+                if prop.type_name() == "QString" {
                     writeln!(
-                        w,
+                        write_buf,
                         "{}_set(m_d, reinterpret_cast<const ushort*>(v.data()), v.size());",
                         base
                     )?;
-                } else if p.type_name() == "QByteArray" {
-                    writeln!(w, "{}_set(m_d, v.data(), v.size());", base)?;
-                } else if p.optional {
-                    writeln!(w, "{}_set(m_d, v.value<{}>());", base, p.type_name())?;
+                } else if prop.type_name() == "QByteArray" {
+                    writeln!(write_buf, "{}_set(m_d, v.data(), v.size());", base)?;
+                } else if prop.optional {
+                    writeln!(
+                        write_buf,
+                        "{}_set(m_d, v.value<{}>());",
+                        base,
+                        prop.type_name()
+                    )?;
                 } else {
-                    writeln!(w, "{}_set(m_d, v);", base)?;
+                    writeln!(write_buf, "{}_set(m_d, v);", base)?;
                 }
 
-                writeln!(w, "}}")?;
-            } else if p.type_name() == "QString" {
+                writeln!(write_buf, "}}")?;
+            } else if prop.type_name() == "QString" {
                 writeln!(
-                    w,
+                    write_buf,
                     "{}_set(m_d, reinterpret_cast<const ushort*>(v.data()), v.size());",
                     base
                 )?;
-            } else if p.type_name() == "QByteArray" {
-                writeln!(w, "{}_set(m_d, v.data(), v.size());", base)?;
+            } else if prop.type_name() == "QByteArray" {
+                writeln!(write_buf, "{}_set(m_d, v.data(), v.size());", base)?;
             } else {
-                writeln!(w, "{}_set(m_d, v);", base)?;
+                writeln!(write_buf, "{}_set(m_d, v);", base)?;
             }
 
-            writeln!(w, "}}")?;
+            writeln!(write_buf, "}}")?;
         }
     }
+
+    Ok(())
+}
+
+fn object(write_buf: &mut Vec<u8>, obj: &Object, name: &str, prop: &Property) -> Result<()> {
+    writeln!(
+        write_buf,
+        "
+const {typ}* {obj_name}::{prop_name}() const
+{{
+    return m_{prop_name};
+}}
+{typ}* {obj_name}::{prop_name}()
+{{
+    return m_{prop_name};
+}}",
+        typ = prop.type_name(),
+        obj_name = obj.name,
+        prop_name = name
+    )?;
+
+    Ok(())
+}
+
+fn complex(write_buf: &mut Vec<u8>, obj: &Object, name: &str, prop: &Property) -> Result<()> {
+    let base = format!("{}_{}", snake_case(&obj.name), snake_case(name));
+    writeln!(
+        write_buf,
+        "
+   {typ} {obj_name}::{name}() const
+   {{
+       {typ} v;
+       {base}_get(m_d, &v, set_{typ_lower_case});
+       return v;
+   }}",
+        typ = prop.type_name(),
+        obj_name = obj.name,
+        name = name,
+        base = base,
+        typ_lower_case = prop.type_name().to_lowercase()
+    )?;
+    Ok(())
+}
+
+fn non_complex_optional(write_buf: &mut Vec<u8>, obj: &Object, name: &str) -> Result<()> {
+    let base = format!("{}_{}", snake_case(&obj.name), snake_case(name));
+
+    writeln!(
+        write_buf,
+        "
+QVariant {obj_name}::{name}() const
+{{
+    QVariant v;
+    auto r = {base}_get(m_d);
+    if (r.some) {{
+        v.setValue(r.value);
+    }}
+    return r;
+}}",
+        obj_name = obj.name,
+        name = name,
+        base = base
+    )?;
+
+    Ok(())
+}
+
+fn non_complex_non_optional(
+    write_buf: &mut Vec<u8>,
+    obj: &Object,
+    name: &str,
+    prop: &Property,
+) -> Result<()> {
+    let base = format!("{}_{}", snake_case(&obj.name), snake_case(name));
+
+    writeln!(
+        write_buf,
+        "
+{typ} {obj_name}::{name}() const
+{{
+    return {base}_get(m_d);
+}}",
+        typ = prop.type_name(),
+        obj_name = obj.name,
+        name = name,
+        base = base
+    )?;
+
     Ok(())
 }
