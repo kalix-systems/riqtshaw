@@ -61,15 +61,17 @@ pub fn write_header(conf: &Config) -> Result<()> {
 fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     let lcname = snake_case(&o.name);
 
-    for p in o.properties.values() {
-        if let Type::Object(object) = &p.property_type {
+    for (prop_name, prop) in o.properties.iter() {
+        if let Type::Object(object) = &prop.property_type {
+            writeln!(w, "void (*)({class_name}*);", class_name = o.name,)?;
             write_extern_typedefs(w, object, conf)?;
         } else {
             writeln!(
                 w,
-                "void (*)({class_name}*)",
-                class_name = o.name,
+                "void (*{snake_class_name}_{p_name}_changed)({class_name}*);",
                 snake_class_name = lcname,
+                p_name = snake_case(prop_name),
+                class_name = o.name,
             )?;
         }
     }
@@ -98,6 +100,8 @@ fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
         ObjectType::Object => {}
         ObjectType::Tree => unimplemented!(),
     }
+
+    writeln!(w, "")?;
 
     Ok(())
 }
