@@ -69,32 +69,6 @@ pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn write_abstract_item_header_data_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
-    if o.object_type == ObjectType::Object {
-        return Ok(());
-    };
-
-    writeln!(w, "void {}::initHeaderData() {{", o.name)?;
-    for col in 0..o.column_count() {
-        for (name, ip) in &o.item_properties {
-            let empty = Vec::new();
-
-            let roles = ip.roles.get(col).unwrap_or(&empty);
-
-            if roles.contains(&"display".to_string()) {
-                writeln!(
-                    w,
-                    "m_headerData.insert(qMakePair({}, Qt::DisplayRole), QVariant(\"{}\"));",
-                    col, name
-                )?;
-            }
-        }
-    }
-    writeln!(w, "}}")?;
-
-    Ok(())
-}
-
 pub(super) fn write_abstract_item_flags_function(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     writeln!(
         w,
@@ -197,59 +171,6 @@ pub(super) fn model_is_writable(o: &Object) -> bool {
     }
 
     write
-}
-
-pub(super) fn initialize_members_zero(w: &mut Vec<u8>, o: &Object) -> Result<()> {
-    for (name, p) in &o.properties {
-        if p.is_object() {
-            writeln!(w, "    m_{}(new {}(false, this)),", name, p.type_name())?;
-        }
-    }
-
-    Ok(())
-}
-
-pub(super) fn initialize_members(
-    w: &mut Vec<u8>,
-    prefix: &str,
-    o: &Object,
-    conf: &Config,
-) -> Result<()> {
-    for (name, p) in &o.properties {
-        if let Type::Object(object) = &p.property_type {
-            writeln!(
-                w,
-                "    {}m_{}->m_d = {}_{}_get({0}m_d);",
-                prefix,
-                name,
-                snake_case(&o.name),
-                snake_case(name)
-            )?;
-            initialize_members(w, &format!("m_{}->", name), object, conf)?;
-        }
-    }
-
-    Ok(())
-}
-
-pub(super) fn connect(w: &mut Vec<u8>, d: &str, o: &Object, conf: &Config) -> Result<()> {
-    for (name, p) in &o.properties {
-        if let Type::Object(object) = &p.property_type {
-            connect(w, &format!("{}->m_{}", d, name), object, conf)?;
-        }
-    }
-
-    if o.object_type != ObjectType::Object {
-        writeln!(
-            w,
-            "    connect({}, &{1}::newDataReady, {0}, [this](const QModelIndex& i) {{
-        {0}->fetchMore(i);
-    }}, Qt::QueuedConnection);",
-            d, o.name
-        )?;
-    }
-
-    Ok(())
 }
 
 pub(super) fn role_name(role: &str) -> String {
