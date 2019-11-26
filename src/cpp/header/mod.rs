@@ -60,10 +60,23 @@ pub fn write_header(conf: &Config) -> Result<()> {
 
 fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<()> {
     let lcname = snake_case(&o.name);
+    writeln!(
+        w,
+        "*{class_name} {snake_class_name};",
+        class_name = o.name,
+        snake_class_name = lcname,
+    )?;
 
     for (prop_name, prop) in o.properties.iter() {
         if let Type::Object(object) = &prop.property_type {
-            writeln!(w, "void (*)({class_name}*);", class_name = o.name,)?;
+            writeln!(
+                w,
+                "*{prop_name} {snake_class_name}_{snake_prop_name};",
+                prop_name = prop_name,
+                snake_class_name = lcname,
+                snake_prop_name = snake_case(prop_name),
+            )?;
+
             write_extern_typedefs(w, object, conf)?;
         } else {
             writeln!(
@@ -81,7 +94,7 @@ fn write_extern_typedefs(w: &mut Vec<u8>, o: &Object, conf: &Config) -> Result<(
             write!(
                 w,
                 "
-             void (*{snake_class_name}_new_data_ready)(const {class_name}*);
+             void (*{snake_class_name}_new_data_ready)({class_name}*);
              void (*{snake_class_name}_layout_about_to_be_changed)({class_name}*);
              void (*{snake_class_name}_layout_changed)({class_name}*);
              void (*{snake_class_name}_data_changed)({class_name}*, quintptr, quintptr);
