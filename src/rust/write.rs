@@ -16,6 +16,7 @@ pub(super) fn write_rust_interface_object(r: &mut Vec<u8>, object: &Object) -> R
     c_ffi::push_properties(&mut scope, object);
     c_ffi::push_models(&mut scope, object);
     c_ffi::push_item_props(&mut scope, object);
+    c_ffi::push_ptr_bundle(&mut scope, object);
 
     writeln!(r, "{}", scope.to_string())?;
 

@@ -6,10 +6,16 @@ mod item_props;
 mod models;
 mod new_imp;
 mod properties;
+mod ptr_bundle;
 
 pub(super) use item_props::push_item_props;
 pub(super) use models::push_models;
 pub(super) use properties::push_properties;
+use ptr_bundle::ptr_bundle;
+
+pub(super) fn push_ptr_bundle(scope: &mut Scope, object: &Object) {
+    scope.push_struct(ptr_bundle(object));
+}
 
 pub(super) fn push_new(scope: &mut Scope, object: &Object) {
     push_to_scope(scope, new_imp::new(object));
