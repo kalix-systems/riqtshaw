@@ -5,11 +5,20 @@ pub(super) fn new(object: &Object) -> Func {
     let mut func = Func::new(&format!("{}_new", &name));
 
     func.extern_abi("C")
-        .vis("pub")
+        .vis("pub unsafe")
         .attr("no_mangle")
-        .ret(format!("*mut {}", object.name));
+        .ret(format!("*mut {}", object.name))
+        .arg("ptr_bundle", format!("*mut {}", ptr_bundle_name(object)))
+        .line("let ptr_bundle = *ptr_bundle;")
+        .line("");
 
-    new_args(object, &name, &mut func);
+    let mut block = Block::new(&format!("let {}", ptr_bundle_name(object)));
+
+    fields(object, &name, &mut block);
+    block.after(" = ptr_bundle;");
+
+    func.push_block(block);
+
     new_ctor(object, &name, &mut func);
 
     func.line(format!("Box::into_raw(Box::new(d_{name}))", name = name));
@@ -17,23 +26,20 @@ pub(super) fn new(object: &Object) -> Func {
     func
 }
 
-pub(super) fn new_args(object: &Object, name: &str, func: &mut Func) {
-    func.arg(&snake_case(name), format!("*mut {}", qobject(&object.name)));
+fn fields(object: &Object, name: &str, block: &mut Block) {
+    block.line(&snake_case(name)).line(",");
 
     for (prop_name, prop) in object.properties.iter() {
         match &prop.property_type {
             Type::Object(object) => {
-                new_args(object, prop_name, func);
+                fields(object, prop_name, block);
             }
             _ => {
-                func.arg(
-                    &format!(
-                        "{name}_{prop_name}_changed",
-                        name = snake_case(name),
-                        prop_name = snake_case(prop_name)
-                    ),
-                    format!("fn(*mut {})", qobject(&object.name)),
-                );
+                block.line(&format!(
+                    "{name}_{prop_name}_changed,",
+                    name = snake_case(name),
+                    prop_name = snake_case(prop_name)
+                ));
             }
         }
     }
@@ -42,122 +48,38 @@ pub(super) fn new_args(object: &Object, name: &str, func: &mut Func) {
         return;
     }
 
-    let qobj = qobject(&object.name);
     let lc_name = snake_case(&name);
 
     match object.object_type {
         ObjectType::List => {
-            func.arg(
-                &format!("{}_new_data_ready", &lc_name),
-                &format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_layout_about_to_be_changed", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_layout_changed", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_data_changed", &lc_name),
-                format!("fn(*mut {}, usize, usize)", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_reset_model", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_end_reset_model", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_insert_rows", &lc_name),
-                format!("fn(*mut {}, usize, usize)", &qobj),
-            )
-            .arg(
-                &format!("{}_end_insert_rows", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_move_rows", &lc_name),
-                format!("fn(*mut {}, usize, usize, usize)", &qobj),
-            )
-            .arg(
-                &format!("{}_end_move_rows", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_remove_rows", &lc_name),
-                format!("fn(*mut {}, usize, usize)", &qobj),
-            )
-            .arg(
-                &format!("{}_end_remove_rows", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            );
+            block
+                .line(format!("{}_new_data_ready,", &lc_name))
+                .line(format!("{}_layout_about_to_be_changed,", &lc_name))
+                .line(format!("{}_layout_changed,", &lc_name))
+                .line(format!("{}_data_changed,", &lc_name))
+                .line(format!("{}_begin_reset_model,", &lc_name))
+                .line(format!("{}_end_reset_model,", &lc_name))
+                .line(format!("{}_begin_insert_rows,", &lc_name))
+                .line(format!("{}_end_insert_rows,", &lc_name))
+                .line(format!("{}_begin_move_rows,", &lc_name))
+                .line(format!("{}_end_move_rows,", &lc_name))
+                .line(format!("{}_begin_remove_rows,", &lc_name))
+                .line(format!("{}_end_remove_rows,", &lc_name));
         }
         ObjectType::Tree => {
-            let tree_index = "index: COption<usize>";
-            func.arg(
-                &format!("{}_new_data_ready", &lc_name),
-                &format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_layout_about_to_be_changed", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_layout_changed", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_data_changed", &lc_name),
-                format!("fn(*mut {}, usize, usize)", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_reset_model", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_end_reset_model", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_insert_rows", &lc_name),
-                format!(
-                    "fn(*mut {qobj}, {index}, usize, usize)",
-                    qobj = &qobj,
-                    index = tree_index
-                ),
-            )
-            .arg(
-                &format!("{}_end_insert_rows", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_move_rows", &lc_name),
-                format!(
-                    "fn(*mut {qobj}, usize, {index}, usize, {index}, usize)",
-                    qobj = &qobj,
-                    index = "index: COption<usize>"
-                ),
-            )
-            .arg(
-                &format!("{}_end_move_rows", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            )
-            .arg(
-                &format!("{}_begin_remove_rows", &lc_name),
-                format!(
-                    "fn(*mut {qobj}, {index}, usize, usize)",
-                    qobj = &qobj,
-                    index = tree_index
-                ),
-            )
-            .arg(
-                &format!("{}_end_remove_rows", &lc_name),
-                format!("fn(*mut {})", &qobj),
-            );
+            block
+                .line(format!("{}_new_data_ready,", &lc_name))
+                .line(format!("{}_layout_about_to_be_changed,", &lc_name))
+                .line(format!("{}_layout_changed,", &lc_name))
+                .line(format!("{}_data_changed", &lc_name))
+                .line(format!("{}_begin_reset_model,", &lc_name))
+                .line(format!("{}_end_reset_model,", &lc_name))
+                .line(format!("{}_begin_insert_rows,", &lc_name))
+                .line(format!("{}_end_insert_rows,", &lc_name))
+                .line(format!("{}_begin_move_rows,", &lc_name))
+                .line(format!("{}_end_move_rows,", &lc_name))
+                .line(format!("{}_begin_remove_rows,", &lc_name))
+                .line(format!("{}_end_remove_rows,", &lc_name));
         }
         _ => unreachable!(),
     }

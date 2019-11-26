@@ -53,3 +53,8 @@ fn push_to_scope(scope: &mut Scope, func: Func) {
 
     scope.raw(&buf);
 }
+
+fn ptr_bundle_name(object: &Object) -> String {
+    let name = &object.name;
+    format!("{}PtrBundle", name)
+}

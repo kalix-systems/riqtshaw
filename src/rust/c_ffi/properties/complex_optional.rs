@@ -33,10 +33,7 @@ pub(super) fn qbytearray_setter(object: &Object, prop_name: &str) -> Func {
         .arg("len", "c_int")
         .line("let obj = &mut *ptr;")
         .line("let value = qba_slice!(value, len);")
-        .line(format!(
-            "obj.set_{}(Some(value.into()));",
-            snake_case(prop_name)
-        ));
+        .line(format!("obj.set_{}(Some(value));", snake_case(prop_name)));
 
     func
 }

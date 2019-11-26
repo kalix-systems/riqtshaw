@@ -59,6 +59,10 @@ pub(super) fn function((fn_name, fn_def): (&str, &Function), object: &Object) ->
             func.line("let str_: *const c_char = ret.as_ptr() as (*const c_char);");
             func.line("set(data, str_, ret.len() as i32);");
         }
+        SimpleType::Void => {
+            func.line(format!("obj.{}(", snake_case(&fn_name)));
+            write_arg_names(&fn_def, &mut func);
+        }
         ret => {
             func.ret(ret.rust_type());
 
