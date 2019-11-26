@@ -87,7 +87,7 @@ fn write_extern_typedefs(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result
             write!(
                 w,
                 "
-             void (*{snake_class_name}_new_data_ready)({class_name}*);
+             void (*{snake_class_name}_new_data_ready)(const {class_name}*);
              void (*{snake_class_name}_layout_about_to_be_changed)({class_name}*);
              void (*{snake_class_name}_layout_changed)({class_name}*);
              void (*{snake_class_name}_data_changed)({class_name}*, quintptr, quintptr);

@@ -120,7 +120,7 @@ pub(super) fn property_type(prop: &ItemProperty) -> String {
     }
     match &prop.item_property_type {
         Type::Simple(_) => prop.type_name().to_string(),
-        Type::Object(obj) => obj.name.clone() + "Ref",
+        Type::Object(obj) => obj.name.clone() + "Ref".into(),
     }
 }
 
@@ -160,7 +160,7 @@ pub(super) fn get_return_type(prop: &Property) -> String {
         t.push_str("*");
     }
 
-    t
+    return t;
 }
 
 pub(super) fn model_is_writable(o: &Object) -> bool {

@@ -39,13 +39,18 @@ pub(super) fn write_cpp_object(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> 
 
     initialize_members_zero(w, obj)?;
 
-    write!(w, "m_d({name}_new(this", name = lcname)?;
+    write!(
+        w,
+        "m_d({name}_new( new {class_name}PtrBundle {{ this",
+        name = lcname,
+        class_name = obj.name
+    )?;
 
     constructor_args(w, "", obj, conf)?;
 
     writeln!(
         w,
-        ")),
+        "}})),
     m_ownsPrivate(true)"
     )?;
 
