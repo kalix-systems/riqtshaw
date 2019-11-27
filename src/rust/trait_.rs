@@ -135,53 +135,6 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
                 .arg("_", "SortOrder")
                 .line("");
         }
-        ObjectType::Tree => {
-            trait_def
-                .new_fn("row_count")
-                .arg_ref_self()
-                .arg("_", "Option<usize>")
-                .ret("usize");
-
-            trait_def
-                .new_fn("can_fetch_more")
-                .arg_ref_self()
-                .arg("_", "Option<usize>")
-                .ret("bool")
-                .line("false");
-
-            trait_def
-                .new_fn("fetch_more")
-                .arg_mut_self()
-                .arg("_", "Option<usize>")
-                .line("");
-
-            trait_def
-                .new_fn("sort")
-                .arg_mut_self()
-                .arg("_", "u8")
-                .arg("_", "SortOrder")
-                .line("");
-
-            trait_def
-                .new_fn("check_row")
-                .arg_ref_self()
-                .arg("index", "usize")
-                .arg("row", "usize")
-                .ret("Option<usize>");
-
-            trait_def
-                .new_fn("index")
-                .arg("item", "Option<usize>")
-                .arg("row", "usize")
-                .ret("usize");
-
-            trait_def
-                .new_fn("parent")
-                .arg("index", "usize")
-                .ret("Option<usize>");
-
-            trait_def.new_fn("row").arg("index", "usize").ret("usize");
-        }
         _ => {}
     }
 
