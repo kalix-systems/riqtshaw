@@ -5,11 +5,7 @@ pub(super) fn register_friend_classes(
     conf: &Config,
     obj: &Object,
 ) -> Result<()> {
-    for object in conf
-        .objects
-        .values()
-        .filter(|o| o.contains_object() && o.name != obj.name)
-    {
+    for object in conf.objects.values().filter(|o| o.name != obj.name) {
         writeln!(header_buf, "friend class {};", object.name)?;
     }
 
