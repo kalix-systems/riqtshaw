@@ -47,7 +47,6 @@ pub(super) fn write_cpp_object(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> 
     )?;
 
     constructor_args(w, "", obj, conf)?;
-
     writeln!(
         w,
         "}})),
@@ -188,6 +187,16 @@ fn constructor_args(
                 name = obj.name,
                 col_count = obj.column_count() - 1
             )?;
+            for (_, item_prop) in obj.item_properties.iter() {
+                if let Type::Object(object_item_prop) = &item_prop.item_property_type {
+                    writeln!(
+                        write_buf,
+                        "/*this is where your segfault is coming from*/ , []({}* o){{ return new {}PtrBundle{{}}; }}",
+                        obj.name, object_item_prop.name
+                    )?;
+                }
+            }
+            // here we need to add the ptr bundle constructors
         }
         ObjectType::Tree => {
             writeln!(
