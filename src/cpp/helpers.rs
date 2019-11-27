@@ -21,7 +21,7 @@ pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
             index_type = index_decl,
             prop_type = item_prop.c_get_type()
         )?;
-        } else {
+        } else if let Type::Simple(_) = item_prop.item_property_type {
             writeln!(
             w,
             "{return_type} {snake_class_name}_data_{snake_data_name}(const {camel_class_name}::Private*, {prop_type});",
@@ -31,6 +31,16 @@ pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
             camel_class_name = o.name,
             prop_type =  index_decl
         )?;
+        } else if let Type::Object(_) = item_prop.item_property_type {
+            writeln!(
+                w,
+                "{return_type}Ref {snake_class_name}_data_{snake_data_name}(const {camel_class_name}::Private*, {prop_type});",
+                return_type = item_prop.cpp_set_type(),
+                snake_class_name = lcname,
+                snake_data_name = snake_case(obj_name),
+                camel_class_name = o.name,
+                prop_type =  index_decl
+            )?;
         }
 
         if item_prop.write {
