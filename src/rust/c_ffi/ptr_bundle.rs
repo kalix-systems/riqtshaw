@@ -5,12 +5,7 @@ pub(crate) fn ptr_bundle(object: &Object) -> Struct {
     let name = &object.name;
     let mut bundle = Struct::new(&ptr_bundle_name(object));
 
-    bundle
-        .repr("C")
-        .allow("unused")
-        .vis("pub")
-        .derive("Clone")
-        .derive("Copy");
+    bundle.repr("C").vis("pub").derive("Clone").derive("Copy");
 
     fields(object, &name, &mut bundle);
 
@@ -36,10 +31,6 @@ fn fields(object: &Object, name: &str, bundle: &mut Struct) {
                 );
             }
         }
-    }
-
-    if object.object_type == ObjectType::Object {
-        return;
     }
 
     let qobj = qobject(&object.name);
@@ -96,71 +87,21 @@ fn fields(object: &Object, name: &str, bundle: &mut Struct) {
                     &format!("{}_end_remove_rows", &lc_name),
                     format!("fn(*mut {})", &qobj),
                 );
+
+            for (item_prop_name, item_prop) in object.item_properties.iter() {
+                if let Type::Object(item_obj) = &item_prop.item_property_type {
+                    bundle.field(
+                        &format!("{}_ptr_bundle_factory", snake_case(item_prop_name)),
+                        format!(
+                            "fn(*mut {qobj}) -> {ptr_bundle}",
+                            qobj = qobject(&item_obj.name),
+                            ptr_bundle = ptr_bundle_name(&item_obj)
+                        ),
+                    );
+                }
+            }
         }
-        ObjectType::Tree => {
-            let tree_index = "index: COption<usize>";
-            bundle
-                .field(
-                    &format!("{}_new_data_ready", &lc_name),
-                    &format!("fn(*mut {})", &qobj),
-                )
-                .field(
-                    &format!("{}_layout_about_to_be_changed", &lc_name),
-                    format!("fn(*mut {})", &qobj),
-                )
-                .field(
-                    &format!("{}_layout_changed", &lc_name),
-                    format!("fn(*mut {})", &qobj),
-                )
-                .field(
-                    &format!("{}_data_changed", &lc_name),
-                    format!("fn(*mut {}, usize, usize)", &qobj),
-                )
-                .field(
-                    &format!("{}_begin_reset_model", &lc_name),
-                    format!("fn(*mut {})", &qobj),
-                )
-                .field(
-                    &format!("{}_end_reset_model", &lc_name),
-                    format!("fn(*mut {})", &qobj),
-                )
-                .field(
-                    &format!("{}_begin_insert_rows", &lc_name),
-                    format!(
-                        "fn(*mut {qobj}, {index}, usize, usize)",
-                        qobj = &qobj,
-                        index = tree_index
-                    ),
-                )
-                .field(
-                    &format!("{}_end_insert_rows", &lc_name),
-                    format!("fn(*mut {})", &qobj),
-                )
-                .field(
-                    &format!("{}_begin_move_rows", &lc_name),
-                    format!(
-                        "fn(*mut {qobj}, usize, {index}, usize, {index}, usize)",
-                        qobj = &qobj,
-                        index = "index: COption<usize>"
-                    ),
-                )
-                .field(
-                    &format!("{}_end_move_rows", &lc_name),
-                    format!("fn(*mut {})", &qobj),
-                )
-                .field(
-                    &format!("{}_begin_remove_rows", &lc_name),
-                    format!(
-                        "fn(*mut {qobj}, {index}, usize, usize)",
-                        qobj = &qobj,
-                        index = tree_index
-                    ),
-                )
-                .field(
-                    &format!("{}_end_remove_rows", &lc_name),
-                    format!("fn(*mut {})", &qobj),
-                );
-        }
-        _ => unreachable!(),
+        ObjectType::Tree => unimplemented!(),
+        ObjectType::Object => {}
     }
 }

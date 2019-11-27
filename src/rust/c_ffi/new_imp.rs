@@ -44,10 +44,6 @@ fn fields(object: &Object, name: &str, block: &mut Block) {
         }
     }
 
-    if object.object_type == ObjectType::Object {
-        return;
-    }
-
     let lc_name = snake_case(&name);
 
     match object.object_type {
@@ -65,23 +61,18 @@ fn fields(object: &Object, name: &str, block: &mut Block) {
                 .line(format!("{}_end_move_rows,", &lc_name))
                 .line(format!("{}_begin_remove_rows,", &lc_name))
                 .line(format!("{}_end_remove_rows,", &lc_name));
+
+            for (item_prop_name, item_prop) in object.item_properties.iter() {
+                if let Type::Object(_) = &item_prop.item_property_type {
+                    block.line(&format!(
+                        "{}_ptr_bundle_factory,",
+                        snake_case(item_prop_name)
+                    ));
+                }
+            }
         }
-        ObjectType::Tree => {
-            block
-                .line(format!("{}_new_data_ready,", &lc_name))
-                .line(format!("{}_layout_about_to_be_changed,", &lc_name))
-                .line(format!("{}_layout_changed,", &lc_name))
-                .line(format!("{}_data_changed", &lc_name))
-                .line(format!("{}_begin_reset_model,", &lc_name))
-                .line(format!("{}_end_reset_model,", &lc_name))
-                .line(format!("{}_begin_insert_rows,", &lc_name))
-                .line(format!("{}_end_insert_rows,", &lc_name))
-                .line(format!("{}_begin_move_rows,", &lc_name))
-                .line(format!("{}_end_move_rows,", &lc_name))
-                .line(format!("{}_begin_remove_rows,", &lc_name))
-                .line(format!("{}_end_remove_rows,", &lc_name));
-        }
-        _ => unreachable!(),
+        ObjectType::Object => {}
+        _ => unimplemented!(),
     }
 }
 

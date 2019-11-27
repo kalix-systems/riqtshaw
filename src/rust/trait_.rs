@@ -195,26 +195,24 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
                 .arg("index", "usize")
                 .ret(rust_return_type_(item_prop));
 
-            if !item_prop.write {
-                continue;
-            }
+            if item_prop.write {
+                let setter_name = format!("set_{name}", name = name);
+                let setter = trait_def
+                    .new_fn(&setter_name)
+                    .arg_mut_self()
+                    .arg("index", "usize")
+                    .ret("bool");
 
-            let setter_name = format!("set_{name}", name = name);
-            let setter = trait_def
-                .new_fn(&setter_name)
-                .arg_mut_self()
-                .arg("index", "usize")
-                .ret("bool");
-
-            match (&item_prop.item_property_type, item_prop.optional) {
-                (crate::configuration::Type::Simple(SimpleType::QByteArray), true) => {
-                    setter.arg("_", "Option<&[u8]>");
-                }
-                (crate::configuration::Type::Simple(SimpleType::QByteArray), false) => {
-                    setter.arg("_", "&[u8]");
-                }
-                _ => {
-                    setter.arg("_", rust_type_(item_prop));
+                match (&item_prop.item_property_type, item_prop.optional) {
+                    (crate::configuration::Type::Simple(SimpleType::QByteArray), true) => {
+                        setter.arg("_", "Option<&[u8]>");
+                    }
+                    (crate::configuration::Type::Simple(SimpleType::QByteArray), false) => {
+                        setter.arg("_", "&[u8]");
+                    }
+                    _ => {
+                        setter.arg("_", rust_type_(item_prop));
+                    }
                 }
             }
         }
