@@ -1,7 +1,6 @@
 //! `rust` is the module that generates the rust code for the binding
 
 use crate::configuration::*;
-use crate::configuration_private::*;
 use crate::util::{snake_case, write_if_different};
 use std::io::{Result, Write};
 
