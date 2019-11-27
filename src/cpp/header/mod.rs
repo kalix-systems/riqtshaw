@@ -26,18 +26,28 @@ pub fn write_header(conf: &Config) -> Result<()> {
         let mut extern_block = Block::new();
         extern_block.before("extern \"C\"");
 
-        // let mut forward_decl = Block::new();
+        let mut def_blocks = Vec::new();
 
         for object in conf.objects.values() {
+            extern_block.line(format!(
+                "typedef struct {name}PtrBundle {name}PtrBundle;",
+                name = object.name
+            ));
+
             // typedef struct
             let mut typedef_block = Block::new();
 
-            typedef_block.before(format!("typedef struct {}PtrBundle", object.name));
-            write_extern_typedefs(&mut typedef_block, object)?;
+            typedef_block.before(format!("struct {}PtrBundle", object.name));
 
-            typedef_block.after(format!("{}PtrBundle;", object.name));
+            write_extern_typedefs(&mut typedef_block, object);
 
-            extern_block.push_block(typedef_block);
+            typedef_block.after(";");
+
+            def_blocks.push(typedef_block);
+        }
+
+        for def_block in def_blocks {
+            extern_block.push_block(def_block);
         }
 
         writeln!(header_buf, "{}", extern_block)?;
@@ -54,7 +64,7 @@ pub fn write_header(conf: &Config) -> Result<()> {
     Ok(())
 }
 
-fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
+fn write_extern_typedefs(block: &mut Block, obj: &Object) {
     let lcname = snake_case(&obj.name);
 
     // first item in the bundle struct is a pointer to the
@@ -67,7 +77,7 @@ fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
 
     for (prop_name, prop) in obj.properties.iter() {
         if let Type::Object(object) = &prop.property_type {
-            write_extern_typedefs(block, object)?;
+            write_extern_typedefs(block, object);
         } else {
             block.line(format!(
                 "void (*{snake_class_name}_{p_name}_changed)({class_name}*);",
@@ -112,8 +122,6 @@ fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
         ObjectType::Object => {}
         ObjectType::Tree => unimplemented!(),
     }
-
-    Ok(())
 }
 
 fn write_header_object(header_buf: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result<()> {
