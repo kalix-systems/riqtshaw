@@ -204,7 +204,11 @@ pub(super) fn qbytearray_set(object: &Object, name: &str, item_prop: &ItemProper
 }
 
 pub(super) fn object_get(object: &Object, item_prop_name: &str, item_obj: &Object) -> Func {
-    let mut func = Func::new(&format!("{}_get", base(object, item_prop_name)));
+    let mut func = Func::new(&format!(
+        "{}_data_{}",
+        snake_case(&object.name),
+        snake_case(item_prop_name)
+    ));
 
     func.extern_abi("C")
         .attr("no_mangle")
