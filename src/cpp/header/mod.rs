@@ -55,6 +55,8 @@ pub fn write_header(conf: &Config) -> Result<()> {
 fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
     let lcname = snake_case(&obj.name);
 
+    // first item in the bundle struct is a pointer to the
+    // type that the bundle is used to construct.
     block.line(format!(
         "{class_name}* {snake_class_name};",
         class_name = obj.name,
@@ -93,6 +95,7 @@ fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
                 class_name = obj.name,
                 snake_class_name = lcname,
             ));
+            // POINTER BUNDLE BUILDER HERE
         }
         ObjectType::Object => {}
         ObjectType::Tree => unimplemented!(),

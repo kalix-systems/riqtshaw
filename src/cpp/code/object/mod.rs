@@ -201,7 +201,5 @@ fn constructor_args(
         _ => {}
     }
 
-    // add_factory_lambdas(w, o)?;
-
     Ok(())
 }
