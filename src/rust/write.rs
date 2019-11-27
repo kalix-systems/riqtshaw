@@ -1,8 +1,9 @@
 use super::*;
 use codegen::*;
 
-pub(super) fn write_rust_interface_object(r: &mut Vec<u8>, object: &Object) -> Result<()> {
+pub(super) fn rust_interface_module(object: &Object) -> Scope {
     let mut scope = Scope::new();
+    scope.import("super", "*");
 
     scope.new_struct(&qobject(&object.name)).vis("pub");
 
@@ -18,7 +19,5 @@ pub(super) fn write_rust_interface_object(r: &mut Vec<u8>, object: &Object) -> R
     c_ffi::push_item_props(&mut scope, object);
     c_ffi::push_ptr_bundle(&mut scope, object);
 
-    writeln!(r, "{}", scope.to_string())?;
-
-    Ok(())
+    scope
 }

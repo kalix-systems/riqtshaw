@@ -1,8 +1,7 @@
 use super::*;
 use codegen::{Function as CGFunc, *};
 
-const CLONE_DOC: &str = "
-Clone the emitter
+const CLONE_DOC: &str = "Clone the emitter
 
 The emitter can only be cloned when it is mutable. The emitter calls
 into C++ code which may call into Rust again. If emmitting is possible
@@ -21,7 +20,7 @@ fn emitter_def(object: &Object) -> Struct {
     let mut emitter = Struct::new(&emitter(&object.name));
 
     emitter.vis("pub").field(
-        "qobject",
+        "pub(super) qobject",
         &format!("Arc<AtomicPtr<{}>>", qobject(&object.name)),
     );
 
@@ -32,7 +31,7 @@ fn emitter_def(object: &Object) -> Struct {
         .map(|(name, _)| name)
     {
         emitter.field(
-            &prop_changed(&prop_name),
+            &prop_changed_field(&prop_name),
             format!("fn(*mut {qobject})", qobject = qobject(&object.name)),
         );
     }
@@ -40,13 +39,13 @@ fn emitter_def(object: &Object) -> Struct {
     match object.object_type {
         ObjectType::List => {
             emitter.field(
-                "new_data_ready",
+                "pub(super) new_data_ready",
                 format!("fn(*mut {qobject})", qobject = qobject(&object.name)),
             );
         }
         ObjectType::Tree => {
             emitter.field(
-                "new_data_ready",
+                "pub(super) new_data_ready",
                 format!(
                     "fn(*mut {qobject}, index: COption<usize>)",
                     qobject = qobject(&object.name)
@@ -184,4 +183,11 @@ fn tree_new_data_ready() -> CGFunc {
 
 fn prop_changed(prop_name: &str) -> String {
     format!("{prop_name}_changed", prop_name = snake_case(prop_name))
+}
+
+fn prop_changed_field(prop_name: &str) -> String {
+    format!(
+        "pub(super) {prop_name}_changed",
+        prop_name = snake_case(prop_name)
+    )
 }

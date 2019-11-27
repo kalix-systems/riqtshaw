@@ -10,4 +10,4 @@ regex= "1"
 
 [dependencies.codegen]
 git = "https://github.com/kalix-systems/codegen"
-rev = "d9d8fd490808a37e7db2e0c6de1efe764474921f"
+rev = "1b9f54c2cc450436db1f6ccc74e85db729198a09"

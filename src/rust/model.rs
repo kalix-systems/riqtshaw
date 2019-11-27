@@ -46,22 +46,22 @@ fn tree_model_def(object: &Object) -> Struct {
     model
         .vis("pub")
         .derive("Clone")
-        .field("qobject", format!("*mut {obj}", obj = &qobj))
-        .field("layout_about_to_be_changed", &qobj_fn_ptr)
-        .field("layout_changed", &qobj_fn_ptr)
-        .field("begin_reset_model", &qobj_fn_ptr)
-        .field("end_reset_model", &qobj_fn_ptr)
-        .field("end_insert_rows", &qobj_fn_ptr)
-        .field("end_move_rows", &qobj_fn_ptr)
-        .field("end_remove_rows", &qobj_fn_ptr)
-        .field("begin_insert_rows", &begin_index_fn_ptr)
-        .field("begin_remove_rows", &begin_index_fn_ptr)
+        .field("pub(super) qobject", format!("*mut {obj}", obj = &qobj))
+        .field("pub(super) layout_about_to_be_changed", &qobj_fn_ptr)
+        .field("pub(super) layout_changed", &qobj_fn_ptr)
+        .field("pub(super) begin_reset_model", &qobj_fn_ptr)
+        .field("pub(super) end_reset_model", &qobj_fn_ptr)
+        .field("pub(super) end_insert_rows", &qobj_fn_ptr)
+        .field("pub(super) end_move_rows", &qobj_fn_ptr)
+        .field("pub(super) end_remove_rows", &qobj_fn_ptr)
+        .field("pub(super) begin_insert_rows", &begin_index_fn_ptr)
+        .field("pub(super) begin_remove_rows", &begin_index_fn_ptr)
         .field(
-            "data_changed",
+            "pub(super) data_changed",
             format!("fn(*mut {qobj}, usize, usize)", qobj = qobj),
         )
         .field(
-            "begin_move_rows",
+            "pub(super) begin_move_rows",
             format!(
                 "fn(*mut {qobj}, {index_c_decl}, usize, usize, {dest_c_decl}, usize)",
                 qobj = qobj,
@@ -69,42 +69,9 @@ fn tree_model_def(object: &Object) -> Struct {
                 dest_c_decl = dest_c_decl
             ),
         );
-    //// for each QObject item property we must give the user a
-    //// factory function to produce that type from rust
-    //add_nested_model_factories(object, &mut model);
 
     model
 }
-
-//fn add_nested_model_factories(object: &Object, model: &mut Struct) {
-//    object
-//        .item_properties
-//        .iter()
-//        .filter(|(_, prop)| {
-//            if let SimpleType::QObject(_) = prop.item_property_type {
-//                true
-//            } else {
-//                false
-//            }
-//        })
-//        .for_each(|(_, prop)| {
-//            let class_name = if let SimpleType::QObject(class_name) = &prop.item_property_type {
-//                class_name
-//            } else {
-//                return;
-//            };
-//
-//            let factory_signature = format!(
-//                "fn(*mut {qobj}) -> {class_name}",
-//                qobj = &object.name,
-//                class_name = &class_name,
-//            );
-//
-//            let factory_name = format!("build_{class_name}", class_name = &class_name,);
-//
-//            model.field(&factory_name, &factory_signature);
-//        });
-//}
 
 fn list_model_def(object: &Object) -> Struct {
     let mut model = Struct::new(&model_name(object).unwrap());
@@ -116,22 +83,22 @@ fn list_model_def(object: &Object) -> Struct {
     model
         .vis("pub")
         .derive("Clone")
-        .field("qobject", format!("*mut {obj}", obj = &qobj))
-        .field("layout_about_to_be_changed", &qobj_fn_ptr)
-        .field("layout_changed", &qobj_fn_ptr)
-        .field("begin_reset_model", &qobj_fn_ptr)
-        .field("end_reset_model", &qobj_fn_ptr)
-        .field("end_insert_rows", &qobj_fn_ptr)
-        .field("end_move_rows", &qobj_fn_ptr)
-        .field("end_remove_rows", &qobj_fn_ptr)
-        .field("begin_insert_rows", &begin_index_fn_ptr)
-        .field("begin_remove_rows", &begin_index_fn_ptr)
+        .field("pub(super) qobject", format!("*mut {obj}", obj = &qobj))
+        .field("pub(super) layout_about_to_be_changed", &qobj_fn_ptr)
+        .field("pub(super) layout_changed", &qobj_fn_ptr)
+        .field("pub(super) begin_reset_model", &qobj_fn_ptr)
+        .field("pub(super) end_reset_model", &qobj_fn_ptr)
+        .field("pub(super) end_insert_rows", &qobj_fn_ptr)
+        .field("pub(super) end_move_rows", &qobj_fn_ptr)
+        .field("pub(super) end_remove_rows", &qobj_fn_ptr)
+        .field("pub(super) begin_insert_rows", &begin_index_fn_ptr)
+        .field("pub(super) begin_remove_rows", &begin_index_fn_ptr)
         .field(
-            "data_changed",
+            "pub(super) data_changed",
             format!("fn(*mut {qobj}, usize, usize)", qobj = qobj),
         )
         .field(
-            "begin_move_rows",
+            "pub(super) begin_move_rows",
             format!("fn(*mut {qobj}, usize, usize, usize)", qobj = qobj),
         );
 

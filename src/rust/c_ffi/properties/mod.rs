@@ -9,7 +9,7 @@ pub(crate) fn push_properties(scope: &mut Scope, object: &Object) {
     for (prop_name, property) in object.properties.iter() {
         match &property.property_type {
             Type::Object(_) => {
-                push_to_scope(scope, object_get(object, prop_name, property));
+                scope.push_fn(object_get(object, prop_name, property));
             }
             Type::Simple(simp_type) => {
                 simple_prop(scope, simp_type, prop_name, property, object);
@@ -17,7 +17,7 @@ pub(crate) fn push_properties(scope: &mut Scope, object: &Object) {
         }
 
         if property.write && property.optional {
-            push_to_scope(scope, set_none(object, prop_name));
+            scope.push_fn(set_none(object, prop_name));
         }
     }
 }
@@ -32,80 +32,56 @@ fn simple_prop(
     match (property.is_complex(), property.optional) {
         (true, false) => {
             if property.rust_by_function {
-                push_to_scope(
-                    scope,
-                    complex_non_optional::get_by_function(object, prop_name, property),
-                );
+                scope.push_fn(complex_non_optional::get_by_function(
+                    object, prop_name, property,
+                ));
             } else {
-                push_to_scope(
-                    scope,
-                    complex_non_optional::getter(object, prop_name, &property),
-                );
+                scope.push_fn(complex_non_optional::getter(object, prop_name, &property));
             }
 
             if property.write {
                 match simp_type {
                     SimpleType::QString => {
-                        push_to_scope(
-                            scope,
-                            complex_non_optional::qstring_setter(object, prop_name),
-                        );
+                        scope.push_fn(complex_non_optional::qstring_setter(object, prop_name));
                     }
                     SimpleType::QByteArray => {
-                        push_to_scope(
-                            scope,
-                            complex_non_optional::qbytearray_setter(object, prop_name),
-                        );
+                        scope.push_fn(complex_non_optional::qbytearray_setter(object, prop_name));
                     }
                     _ => {}
                 }
             }
         }
         (true, true) => {
-            push_to_scope(
-                scope,
-                complex_optional::getter(object, prop_name, &property),
-            );
+            scope.push_fn(complex_optional::getter(object, prop_name, &property));
 
             if property.write {
                 match simp_type {
                     SimpleType::QString => {
-                        push_to_scope(scope, complex_optional::qstring_setter(object, prop_name));
+                        scope.push_fn(complex_optional::qstring_setter(object, prop_name));
                     }
                     SimpleType::QByteArray => {
-                        push_to_scope(
-                            scope,
-                            complex_optional::qbytearray_setter(object, prop_name),
-                        );
+                        scope.push_fn(complex_optional::qbytearray_setter(object, prop_name));
                     }
                     _ => {}
                 }
             }
         }
         (false, true) => {
-            push_to_scope(
-                scope,
-                non_complex_optional::getter(object, prop_name, property),
-            );
+            scope.push_fn(non_complex_optional::getter(object, prop_name, property));
 
             if property.write {
-                push_to_scope(
-                    scope,
-                    non_complex_optional::setter(object, prop_name, property),
-                );
+                scope.push_fn(non_complex_optional::setter(object, prop_name, property));
             }
         }
         (false, false) => {
-            push_to_scope(
-                scope,
-                non_complex_non_optional::getter(object, prop_name, property),
-            );
+            scope.push_fn(non_complex_non_optional::getter(
+                object, prop_name, property,
+            ));
 
             if property.write {
-                push_to_scope(
-                    scope,
-                    non_complex_non_optional::setter(object, prop_name, property),
-                );
+                scope.push_fn(non_complex_non_optional::setter(
+                    object, prop_name, property,
+                ));
             }
         }
     }
