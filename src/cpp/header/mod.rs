@@ -32,7 +32,7 @@ pub fn write_header(conf: &Config) -> Result<()> {
 
             typedef_block.before(format!("typedef struct {}PtrBundle", object.name));
             write_extern_typedefs(&mut typedef_block, object)?;
-            // here we need to add the function signatures for the ptrbundle factories
+
             typedef_block.after(format!("{}PtrBundle;", object.name));
 
             extern_block.push_block(typedef_block);
@@ -95,7 +95,17 @@ fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
                 class_name = obj.name,
                 snake_class_name = lcname,
             ));
-            // POINTER BUNDLE BUILDER HERE
+
+            for (item_prop_name, item_prop) in obj.item_properties.iter() {
+                if let Type::Object(item_obj) = &item_prop.item_property_type {
+                    block.line(format!(
+                        "*{ptr_bundle} (*{item_obj}_ptr_bundle_factory)({class_name}*);",
+                        class_name = obj.name,
+                        item_obj = snake_case(&item_prop_name),
+                        ptr_bundle = format!("{}PtrBundle", &item_obj.name)
+                    ));
+                }
+            }
         }
         ObjectType::Object => {}
         ObjectType::Tree => unimplemented!(),
