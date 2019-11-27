@@ -9,7 +9,15 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
     }
 
     for (name, item_prop) in &object.item_properties {
-        if item_prop.is_complex() {
+        if let crate::configuration::Type::Object(item_obj) = &item_prop.item_property_type {
+            match object.object_type {
+                ObjectType::List => {
+                    push_to_scope(scope, list::object_get(object, name, item_obj));
+                }
+                ObjectType::Tree => unimplemented!(),
+                _ => {}
+            }
+        } else if item_prop.is_complex() {
             match object.object_type {
                 ObjectType::List => {
                     push_to_scope(scope, list::complex_data(object, name, item_prop));

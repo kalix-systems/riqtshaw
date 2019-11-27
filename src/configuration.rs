@@ -1,4 +1,3 @@
-use crate::configuration_private::*;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -11,8 +10,8 @@ pub struct Config {
     pub overwrite_implementation: bool,
 }
 
-impl ConfigPrivate for Config {
-    fn types(&self) -> BTreeSet<String> {
+impl Config {
+    pub fn types(&self) -> BTreeSet<String> {
         let mut ops = BTreeSet::new();
 
         for object in self.objects.values() {
@@ -36,7 +35,7 @@ impl ConfigPrivate for Config {
         ops
     }
 
-    fn optional_types(&self) -> BTreeSet<String> {
+    pub fn optional_types(&self) -> BTreeSet<String> {
         let mut ops = BTreeSet::new();
         for o in self.objects.values() {
             for p in o.properties.values() {
@@ -56,7 +55,7 @@ impl ConfigPrivate for Config {
         ops
     }
 
-    fn has_list_or_tree(&self) -> bool {
+    pub fn has_list_or_tree(&self) -> bool {
         self.objects
             .values()
             .any(|o| o.object_type == ObjectType::List || o.object_type == ObjectType::Tree)
@@ -87,12 +86,12 @@ impl Object {
     }
 }
 
-impl ObjectPrivate for Object {
-    fn contains_object(&self) -> bool {
+impl Object {
+    pub fn contains_object(&self) -> bool {
         self.properties.values().any(|p| p.is_object())
     }
 
-    fn column_count(&self) -> usize {
+    pub fn column_count(&self) -> usize {
         let mut column_count = 1;
         for ip in self.item_properties.values() {
             column_count = column_count.max(ip.roles.len());
@@ -109,23 +108,23 @@ pub struct Property {
     pub write: bool,
 }
 
-impl PropertyPrivate for Property {
-    fn is_object(&self) -> bool {
+impl Property {
+    pub fn is_object(&self) -> bool {
         self.property_type.is_object()
     }
 
-    fn is_complex(&self) -> bool {
+    pub fn is_complex(&self) -> bool {
         self.property_type.is_complex()
     }
 
-    fn c_get_type(&self) -> String {
+    pub fn c_get_type(&self) -> String {
         let name = self.property_type.name();
         name.to_string() + "*, " + &name.to_lowercase() + "_set"
     }
 }
 
-impl TypeName for Property {
-    fn type_name(&self) -> &str {
+impl Property {
+    pub fn type_name(&self) -> &str {
         self.property_type.name()
     }
 }
@@ -162,8 +161,8 @@ pub enum SimpleType {
     QObject(String),
 }
 
-impl SimpleTypePrivate for SimpleType {
-    fn name(&self) -> &str {
+impl SimpleType {
+    pub fn name(&self) -> &str {
         match self {
             SimpleType::QString => "QString",
             SimpleType::QByteArray => "QByteArray",
@@ -183,7 +182,7 @@ impl SimpleTypePrivate for SimpleType {
         }
     }
 
-    fn cpp_set_type(&self) -> &str {
+    pub fn cpp_set_type(&self) -> &str {
         match self {
             SimpleType::QString => "const QString&",
             SimpleType::QByteArray => "const QByteArray&",
@@ -191,7 +190,7 @@ impl SimpleTypePrivate for SimpleType {
         }
     }
 
-    fn c_set_type(&self) -> &str {
+    pub fn c_set_type(&self) -> &str {
         match self {
             SimpleType::QString => "qstring_t",
             SimpleType::QByteArray => "qbytearray_t",
@@ -199,7 +198,7 @@ impl SimpleTypePrivate for SimpleType {
         }
     }
 
-    fn rust_type(&self) -> &str {
+    pub fn rust_type(&self) -> &str {
         match self {
             SimpleType::QString => "String",
             SimpleType::QByteArray => "Vec<u8>",
@@ -219,7 +218,7 @@ impl SimpleTypePrivate for SimpleType {
         }
     }
 
-    fn rust_type_init(&self) -> &str {
+    pub fn rust_type_init(&self) -> &str {
         match self {
             SimpleType::QString => "String::new()",
             SimpleType::QByteArray => "Vec::new()",
@@ -230,7 +229,7 @@ impl SimpleTypePrivate for SimpleType {
         }
     }
 
-    fn is_complex(&self) -> bool {
+    pub fn is_complex(&self) -> bool {
         self == &SimpleType::QString || self == &SimpleType::QByteArray
     }
 }
@@ -241,50 +240,50 @@ pub enum Type {
     Object(Rc<Object>),
 }
 
-impl TypePrivate for Type {
-    fn is_object(&self) -> bool {
+impl Type {
+    pub fn is_object(&self) -> bool {
         match self {
             Type::Object(_) => true,
             _ => false,
         }
     }
 
-    fn is_complex(&self) -> bool {
+    pub fn is_complex(&self) -> bool {
         match self {
             Type::Simple(simple) => simple.is_complex(),
             _ => false,
         }
     }
 
-    fn name(&self) -> &str {
+    pub fn name(&self) -> &str {
         match self {
             Type::Simple(s) => s.name(),
             Type::Object(o) => &o.name,
         }
     }
 
-    fn cpp_set_type(&self) -> &str {
+    pub fn cpp_set_type(&self) -> &str {
         match self {
             Type::Simple(s) => s.cpp_set_type(),
             Type::Object(o) => &o.name,
         }
     }
 
-    fn c_set_type(&self) -> &str {
+    pub fn c_set_type(&self) -> &str {
         match self {
             Type::Simple(s) => s.c_set_type(),
             Type::Object(o) => &o.name,
         }
     }
 
-    fn rust_type(&self) -> &str {
+    pub fn rust_type(&self) -> &str {
         match self {
             Type::Simple(s) => s.rust_type(),
             Type::Object(o) => &o.name,
         }
     }
 
-    fn rust_type_init(&self) -> &str {
+    pub fn rust_type_init(&self) -> &str {
         match self {
             Type::Simple(s) => s.rust_type_init(),
             Type::Object(_) => unimplemented!(),
@@ -301,18 +300,28 @@ pub struct ItemProperty {
     pub write: bool,
 }
 
-impl TypeName for ItemProperty {
-    fn type_name(&self) -> &str {
+impl ItemProperty {
+    pub fn is_object(&self) -> bool {
+        if let Type::Object(_) = self.item_property_type {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl ItemProperty {
+    pub fn type_name(&self) -> &str {
         self.item_property_type.name()
     }
 }
 
-impl ItemPropertyPrivate for ItemProperty {
-    fn is_complex(&self) -> bool {
+impl ItemProperty {
+    pub fn is_complex(&self) -> bool {
         self.item_property_type.is_complex()
     }
 
-    fn cpp_set_type(&self) -> String {
+    pub fn cpp_set_type(&self) -> String {
         let typ = self.item_property_type.cpp_set_type().to_string();
 
         if self.optional {
@@ -322,11 +331,11 @@ impl ItemPropertyPrivate for ItemProperty {
         typ
     }
 
-    fn c_get_type(&self) -> String {
+    pub fn c_get_type(&self) -> String {
         let name = self.item_property_type.name();
         name.to_string() + "*, " + &name.to_lowercase() + "_set"
     }
-    fn c_set_type(&self) -> &str {
+    pub fn c_set_type(&self) -> &str {
         self.item_property_type.c_set_type()
     }
 }
@@ -338,8 +347,8 @@ pub struct Function {
     pub arguments: Vec<Argument>,
 }
 
-impl TypeName for Function {
-    fn type_name(&self) -> &str {
+impl Function {
+    pub fn type_name(&self) -> &str {
         self.return_type.name()
     }
 }
@@ -350,8 +359,8 @@ pub struct Argument {
     pub argument_type: SimpleType,
 }
 
-impl TypeName for Argument {
-    fn type_name(&self) -> &str {
+impl Argument {
+    pub fn type_name(&self) -> &str {
         self.argument_type.name()
     }
 }
