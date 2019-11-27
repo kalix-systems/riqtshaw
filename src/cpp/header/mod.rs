@@ -26,6 +26,8 @@ pub fn write_header(conf: &Config) -> Result<()> {
         let mut extern_block = Block::new();
         extern_block.before("extern \"C\"");
 
+        // let mut forward_decl = Block::new();
+
         for object in conf.objects.values() {
             // typedef struct
             let mut typedef_block = Block::new();
@@ -99,7 +101,7 @@ fn write_extern_typedefs(block: &mut Block, obj: &Object) -> Result<()> {
             for (item_prop_name, item_prop) in obj.item_properties.iter() {
                 if let Type::Object(item_obj) = &item_prop.item_property_type {
                     block.line(format!(
-                        "*{ptr_bundle} (*{item_obj}_ptr_bundle_factory)({class_name}*);",
+                        "{ptr_bundle}* (*{item_obj}_ptr_bundle_factory)({class_name}*);",
                         class_name = obj.name,
                         item_obj = snake_case(&item_prop_name),
                         ptr_bundle = format!("{}PtrBundle", &item_obj.name)
