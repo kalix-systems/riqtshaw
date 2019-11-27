@@ -32,7 +32,7 @@ pub fn write_header(conf: &Config) -> Result<()> {
 
             typedef_block.before(format!("typedef struct {}PtrBundle", object.name));
             write_extern_typedefs(&mut typedef_block, object)?;
-
+            // here we need to add the function signatures for the ptrbundle factories
             typedef_block.after(format!("{}PtrBundle;", object.name));
 
             extern_block.push_block(typedef_block);
