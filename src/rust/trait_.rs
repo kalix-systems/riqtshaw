@@ -140,18 +140,18 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
 
     if object.object_type != ObjectType::Object {
         for (name, item_prop) in object.item_properties.iter() {
-            if item_prop.is_object() {
-                //let typ = rust_type(item_prop);
+            if let crate::configuration::Type::Object(item_obj) = &item_prop.item_property_type {
+                trait_def
+                    .new_fn(&snake_case(name))
+                    .arg_ref_self()
+                    .arg("index", "usize")
+                    .ret(format!("&{typ}", typ = item_obj.name));
 
-                //trait_def
-                //    .new_fn(&lc_name)
-                //    .arg_ref_self()
-                //    .ret(format!("&{typ}", typ = &typ));
-
-                //trait_def
-                //    .new_fn(&format!("{}_mut", &lc_name))
-                //    .arg_mut_self()
-                //    .ret(format!("&mut {typ}", typ = typ));
+                trait_def
+                    .new_fn(&format!("{}_mut", &snake_case(name)))
+                    .arg_mut_self()
+                    .arg("index", "usize")
+                    .ret(format!("&mut {typ}", typ = item_obj.name));
             } else {
                 let name = snake_case(name);
 

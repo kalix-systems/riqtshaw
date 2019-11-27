@@ -202,3 +202,25 @@ pub(super) fn qbytearray_set(object: &Object, name: &str, item_prop: &ItemProper
 
     func
 }
+
+pub(super) fn object_get(object: &Object, item_prop_name: &str, item_obj: &Object) -> Func {
+    let mut func = Func::new(&format!("{}_get", base(object, item_prop_name)));
+
+    func.extern_abi("C")
+        .attr("no_mangle")
+        .vis("pub unsafe")
+        .ret(format!("*mut {}", typ = item_obj.name))
+        .arg("ptr", format!("*mut {}", object.name))
+        .arg("row", "c_int")
+        .line(&format!(
+            "(&mut *ptr).{name}_mut({row_ix})",
+            name = snake_case(item_prop_name),
+            row_ix = ROW_IX
+        ));
+
+    func
+}
+
+fn base(object: &Object, prop_name: &str) -> String {
+    format!("{}_{}", snake_case(&object.name), snake_case(prop_name))
+}
