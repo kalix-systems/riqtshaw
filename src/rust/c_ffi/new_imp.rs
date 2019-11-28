@@ -86,7 +86,6 @@ fn fields(object: &Object, name: &str, block: &mut Block) {
             }
         }
         ObjectType::Object => {}
-        _ => unimplemented!(),
     }
 }
 

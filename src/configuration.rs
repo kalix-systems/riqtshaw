@@ -55,10 +55,10 @@ impl Config {
         ops
     }
 
-    pub fn has_list_or_tree(&self) -> bool {
+    pub fn has_list(&self) -> bool {
         self.objects
             .values()
-            .any(|o| o.object_type == ObjectType::List || o.object_type == ObjectType::Tree)
+            .any(|o| o.object_type == ObjectType::List)
     }
 }
 
@@ -139,7 +139,6 @@ pub struct Rust {
 pub enum ObjectType {
     Object,
     List,
-    Tree,
 }
 
 #[derive(PartialEq, Clone, Debug)]

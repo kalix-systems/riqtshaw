@@ -135,7 +135,6 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
                 .arg("_", "SortOrder")
                 .line("");
         }
-        ObjectType::Tree => unimplemented!(),
         _ => {}
     }
 

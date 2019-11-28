@@ -2,11 +2,7 @@ use super::*;
 
 pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
     // define ffi getters for from-rust FFI types
-    let index_decl = if o.object_type == ObjectType::Tree {
-        "quintptr"
-    } else {
-        "int"
-    };
+    let index_decl = "int";
 
     let lcname = snake_case(&o.name);
 

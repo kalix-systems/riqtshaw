@@ -43,15 +43,6 @@ fn emitter_def(object: &Object) -> Struct {
                 format!("fn(*mut {qobject})", qobject = qobject(&object.name)),
             );
         }
-        ObjectType::Tree => {
-            emitter.field(
-                "pub(super) new_data_ready",
-                format!(
-                    "fn(*mut {qobject}, index: COption<usize>)",
-                    qobject = qobject(&object.name)
-                ),
-            );
-        }
         _ => {}
     }
 
@@ -72,9 +63,6 @@ fn emitter_impl(object: &Object, emit_struct: &Struct) -> Impl {
     match object.object_type {
         ObjectType::List => {
             imp.push_fn(list_new_data_ready());
-        }
-        ObjectType::Tree => {
-            imp.push_fn(tree_new_data_ready());
         }
         _ => {}
     }
@@ -159,22 +147,6 @@ fn list_new_data_ready() -> CGFunc {
 
     let mut block = Block::new("if !ptr.is_null()");
     block.line("(self.new_data_ready)(ptr);");
-
-    func.push_block(block);
-
-    func
-}
-
-fn tree_new_data_ready() -> CGFunc {
-    let mut func = CGFunc::new("new_data_ready");
-
-    func.vis("pub")
-        .arg_mut_self()
-        .arg("item", "Option<usize>")
-        .line("let ptr = self.qobject.load(Ordering::SeqCst);");
-
-    let mut block = Block::new("if !ptr.is_null()");
-    block.line("(self.new_data_ready)(ptr, item.into());");
 
     func.push_block(block);
 

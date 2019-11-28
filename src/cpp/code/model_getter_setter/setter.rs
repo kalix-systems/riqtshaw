@@ -6,34 +6,19 @@ pub(super) fn item_prop_write(
     item_prop: &ItemProperty,
     obj: &Object,
     mut read_type: String,
-    mut idx: &str,
+    idx: &str,
 ) -> Result<()> {
     if read_type == "QVariant" || item_prop.is_complex() {
         read_type = format!("const {}&", read_type);
     }
 
-    match obj.object_type {
-        ObjectType::List => {
-            idx = ", row";
-            writeln!(
-                write_buf,
-                "bool {}::set{}(int row, {} value)\n{{",
-                obj.name,
-                upper_initial(name),
-                read_type
-            )?;
-        }
-        ObjectType::Tree => {
-            writeln!(
-                write_buf,
-                "bool {}::set{}(const QModelIndex& index, {} value)\n{{",
-                obj.name,
-                upper_initial(name),
-                read_type
-            )?;
-        }
-        _ => unreachable!(),
-    }
+    writeln!(
+        write_buf,
+        "bool {}::set{}(int row, {} value)\n{{",
+        obj.name,
+        upper_initial(name),
+        read_type
+    )?;
 
     writeln!(write_buf, "bool set = false;")?;
 
@@ -43,11 +28,9 @@ pub(super) fn item_prop_write(
         setter_body(write_buf, item_prop, name, idx, obj)?;
     }
 
-    match obj.object_type {
-        ObjectType::List => {
-            writeln!(
-                write_buf,
-                "
+    writeln!(
+        write_buf,
+        "
     if (set) {{
         QModelIndex index = createIndex(row, 0, row);
         Q_EMIT dataChanged(index, index);
@@ -55,22 +38,7 @@ pub(super) fn item_prop_write(
     return set;
 }}
 "
-            )?;
-        }
-        ObjectType::Tree => {
-            writeln!(
-                write_buf,
-                "
-    if (set) {{
-        Q_EMIT dataChanged(index, index);
-    }}
-    return set;
-}}
-"
-            )?;
-        }
-        _ => unreachable!(),
-    }
+    )?;
 
     Ok(())
 }

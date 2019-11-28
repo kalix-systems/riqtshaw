@@ -13,7 +13,6 @@ pub(crate) fn push_models(scope: &mut Scope, object: &Object) {
             scope.push_fn(fetch_more(object));
             scope.push_fn(sort(object));
         }
-        ObjectType::Tree => unimplemented!(),
         _ => {}
     }
 }

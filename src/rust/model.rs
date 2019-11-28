@@ -3,7 +3,6 @@ use codegen::{Function as Func, *};
 
 pub(super) fn model_name(object: &Object) -> Option<String> {
     match object.object_type {
-        ObjectType::Tree => Some(format!("{name}Tree", name = object.name)),
         ObjectType::List => Some(format!("{name}List", name = object.name)),
         _ => None,
     }
@@ -24,7 +23,6 @@ pub(super) fn push_model(scope: &mut Scope, object: &Object) {
 fn model_def(object: &Object) -> Struct {
     let mut model = match object.object_type {
         ObjectType::List => list_model_def(object),
-        ObjectType::Tree => unimplemented!(),
         _ => unreachable!(),
     };
 
@@ -75,7 +73,6 @@ fn list_model_def(object: &Object) -> Struct {
 fn model_imp(object: &Object, model_struct: &Struct) -> Impl {
     match object.object_type {
         ObjectType::List => list_model_imp(object, model_struct),
-        ObjectType::Tree => unimplemented!(),
         _ => unreachable!(),
     }
 }

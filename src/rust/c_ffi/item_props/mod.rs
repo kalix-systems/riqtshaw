@@ -14,7 +14,6 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
                 ObjectType::List => {
                     scope.push_fn(list::object_get(object, name, item_obj));
                 }
-                ObjectType::Tree => unimplemented!(),
                 _ => {}
             }
         } else if item_prop.is_complex() {
@@ -22,7 +21,6 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
                 ObjectType::List => {
                     scope.push_fn(list::complex_data(object, name, item_prop));
                 }
-                ObjectType::Tree => unimplemented!(),
                 _ => {}
             }
         } else {
@@ -30,7 +28,6 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
                 ObjectType::List => {
                     scope.push_fn(list::non_complex_data(object, name, item_prop));
                 }
-                ObjectType::Tree => unimplemented!(),
                 _ => {}
             }
         }
@@ -42,7 +39,6 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
                         ObjectType::List => {
                             scope.push_fn(list::qstring_set(object, name, item_prop));
                         }
-                        ObjectType::Tree => unimplemented!(),
                         _ => {}
                     }
                 }
@@ -51,7 +47,6 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
                         ObjectType::List => {
                             scope.push_fn(list::qbytearray_set(object, name, item_prop));
                         }
-                        ObjectType::Tree => unimplemented!(),
                         _ => {}
                     }
                 }
@@ -59,7 +54,6 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
                     ObjectType::List => {
                         scope.push_fn(list::non_complex_set(object, name, item_prop));
                     }
-                    ObjectType::Tree => unimplemented!(),
                     _ => {}
                 },
                 _ => {}
@@ -71,7 +65,6 @@ pub(crate) fn push_item_props(scope: &mut Scope, object: &Object) {
                 ObjectType::List => {
                     scope.push_fn(list::set_none(object, name, item_prop));
                 }
-                ObjectType::Tree => unimplemented!(),
                 _ => {}
             }
         }

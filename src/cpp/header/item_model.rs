@@ -12,7 +12,6 @@ pub(super) fn write_header_item_model(header_buf: &mut Vec<u8>, obj: &Object) ->
 
     match obj.object_type {
         ObjectType::List => list(header_buf, obj)?,
-        ObjectType::Tree => tree(header_buf, obj)?,
         _ => unreachable!(),
     }
 
@@ -53,37 +52,6 @@ fn list(header_buf: &mut Vec<u8>, obj: &Object) -> Result<()> {
             writeln!(
                 header_buf,
                 "Q_INVOKABLE bool set{name}(int row, {read_write_type} value);",
-                name = upper_initial(name),
-                read_write_type = read_write_type
-            )?;
-        }
-    }
-
-    Ok(())
-}
-
-fn tree(header_buf: &mut Vec<u8>, obj: &Object) -> Result<()> {
-    for (name, item_prop) in obj.item_properties.iter() {
-        let read_type = property_type(item_prop);
-
-        let read_write_type =
-            if read_type == "QVariant" || item_prop.item_property_type.is_complex() {
-                format!("const {}&", read_type)
-            } else {
-                read_type.clone()
-            };
-
-        writeln!(
-            header_buf,
-            "Q_INVOKABLE {read_type} {name}(const QModelIndex& index) const;",
-            read_type = read_type,
-            name = name
-        )?;
-
-        if item_prop.write {
-            writeln!(
-                header_buf,
-                "Q_INVOKABLE bool set{name}(const QModelIndex& index, {read_write_type} value);",
                 name = upper_initial(name),
                 read_write_type = read_write_type
             )?;

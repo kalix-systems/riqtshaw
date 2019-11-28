@@ -199,15 +199,6 @@ fn constructor_args(
                 }
             }
         }
-        ObjectType::Tree => {
-            writeln!(
-                write_buf,
-                include_str!("../../cpp/tree_constructor_lambdas.cpp_string"),
-                name = obj.name,
-                snake_case_class_name = snake_case(&obj.name),
-                col_count = obj.column_count() - 1
-            )?;
-        }
         _ => {}
     }
 
@@ -252,15 +243,6 @@ pub fn ptr_bundle_struct_args(write_buf: &mut Vec<u8>, obj: &Object, conf: &Conf
                     writeln!(write_buf, "}}; }}")?;
                 }
             }
-        }
-        ObjectType::Tree => {
-            writeln!(
-                write_buf,
-                include_str!("../../cpp/tree_constructor_lambdas.cpp_string"),
-                name = obj.name,
-                snake_case_class_name = snake_case(&obj.name),
-                col_count = obj.column_count() - 1
-            )?;
         }
         _ => {}
     }

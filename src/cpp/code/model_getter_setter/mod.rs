@@ -5,32 +5,19 @@ mod setter;
 
 pub(super) fn write_model_getter_setter(
     write_buf: &mut Vec<u8>,
-    index: &str,
     name: &str,
     item_prop: &ItemProperty,
     obj: &Object,
 ) -> Result<()> {
     let read_type = property_type(item_prop);
 
-    let idx = match obj.object_type {
-        ObjectType::List => {
-            writeln!(
-                write_buf,
-                "{} {}::{}(int row) const\n{{",
-                read_type, obj.name, name
-            )?;
-            ", row"
-        }
-        ObjectType::Tree => {
-            writeln!(
-                write_buf,
-                "{} {}::{}(const QModelIndex& index) const\n{{",
-                read_type, obj.name, name
-            )?;
-            index
-        }
-        _ => unreachable!(),
-    };
+    let idx = ", row";
+
+    writeln!(
+        write_buf,
+        "{} {}::{}(int row) const\n{{",
+        read_type, obj.name, name
+    )?;
 
     match item_prop.item_property_type {
         Type::Simple(SimpleType::QString) => {

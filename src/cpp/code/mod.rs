@@ -84,12 +84,6 @@ pub fn write_cpp(conf: &Config) -> Result<()> {
 fn write_cpp_model(w: &mut Vec<u8>, o: &Object) -> Result<()> {
     let lcname = snake_case(&o.name);
 
-    let index = if o.object_type == ObjectType::Tree {
-        "index.internalId()"
-    } else {
-        "index.row()"
-    };
-
     writeln!(w, "extern \"C\" {{")?;
 
     define_ffi_getters(o, w)?;
@@ -132,7 +126,7 @@ void {0}::sort(int column, Qt::SortOrder order)
     write_abstract_item_flags_function(o, w)?;
 
     for ip in o.item_properties.iter() {
-        write_model_getter_setter(w, index, ip.0, ip.1, o)?;
+        write_model_getter_setter(w, ip.0, ip.1, o)?;
     }
 
     writeln!(

@@ -97,7 +97,6 @@ fn fields(object: &Object, name: &str, bundle: &mut Struct) {
                 }
             }
         }
-        ObjectType::Tree => unimplemented!(),
         ObjectType::Object => {}
     }
 }

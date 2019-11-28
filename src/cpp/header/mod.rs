@@ -120,7 +120,6 @@ fn write_extern_typedefs(block: &mut Block, obj: &Object) {
             }
         }
         ObjectType::Object => {}
-        ObjectType::Tree => unimplemented!(),
     }
 }
 
@@ -138,7 +137,7 @@ fn write_header_object(header_buf: &mut Vec<u8>, obj: &Object, conf: &Config) ->
 
         match obj.object_type {
             ObjectType::Object => {}
-            ObjectType::List | ObjectType::Tree => {
+            ObjectType::List => {
                 item_model::write_header_item_model(header_buf, obj)?;
             }
         }

@@ -51,11 +51,6 @@ impl<'a> Obj<'a> {
         self
     }
 
-    pub fn tree(mut self) -> Self {
-        self.object_type = ObjectType::Tree;
-        self
-    }
-
     pub fn build(self) -> Option<Object> {
         let Self {
             name,
