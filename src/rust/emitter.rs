@@ -36,14 +36,11 @@ fn emitter_def(object: &Object) -> Struct {
         );
     }
 
-    match object.object_type {
-        ObjectType::List => {
-            emitter.field(
-                "pub(super) new_data_ready",
-                format!("fn(*mut {qobject})", qobject = qobject(&object.name)),
-            );
-        }
-        _ => {}
+    if let ObjectType::List = object.object_type {
+        emitter.field(
+            "pub(super) new_data_ready",
+            format!("fn(*mut {qobject})", qobject = qobject(&object.name)),
+        );
     }
 
     emitter
@@ -60,11 +57,8 @@ fn emitter_impl(object: &Object, emit_struct: &Struct) -> Impl {
         imp.push_fn(prop_change_fn(prop_name));
     }
 
-    match object.object_type {
-        ObjectType::List => {
-            imp.push_fn(list_new_data_ready());
-        }
-        _ => {}
+    if let ObjectType::List = object.object_type {
+        imp.push_fn(list_new_data_ready());
     }
 
     imp

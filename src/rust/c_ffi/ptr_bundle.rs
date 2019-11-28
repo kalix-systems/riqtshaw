@@ -87,15 +87,6 @@ fn fields(object: &Object, name: &str, bundle: &mut Struct) {
                     &format!("{}_end_remove_rows", &lc_name),
                     format!("fn(*mut {})", &qobj),
                 );
-
-            for (item_prop_name, item_prop) in object.item_properties.iter() {
-                if let Type::Object(item_obj) = &item_prop.item_property_type {
-                    bundle.field(
-                        &ptr_bundle_factory_name(item_prop_name),
-                        ptr_bundle_factory_signature(&object, item_obj),
-                    );
-                }
-            }
         }
         ObjectType::Object => {}
     }

@@ -115,8 +115,8 @@ fn setter_body(
         Ok(())
     } else {
         let val = match item_prop.item_property_type {
-            Type::Simple(SimpleType::QString) => "value.utf16(), value.length()",
-            Type::Simple(SimpleType::QByteArray) => "value.data(), value.length()",
+            SimpleType::QString => "value.utf16(), value.length()",
+            SimpleType::QByteArray => "value.data(), value.length()",
             _ => "value",
         };
 

@@ -101,84 +101,67 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
         trait_func.ret(func.return_type.rust_type());
     }
 
-    match object.object_type {
-        ObjectType::List => {
-            trait_def.new_fn("row_count").arg_ref_self().ret("usize");
-            trait_def
-                .new_fn("insert_rows")
-                .arg_mut_self()
-                .arg("_row", "usize")
-                .arg("_count", "usize")
-                .ret("bool")
-                .line("false");
+    if let ObjectType::List = object.object_type {
+        trait_def.new_fn("row_count").arg_ref_self().ret("usize");
+        trait_def
+            .new_fn("insert_rows")
+            .arg_mut_self()
+            .arg("_row", "usize")
+            .arg("_count", "usize")
+            .ret("bool")
+            .line("false");
 
-            trait_def
-                .new_fn("remove_rows")
-                .arg_mut_self()
-                .arg("_row", "usize")
-                .arg("_count", "usize")
-                .ret("bool")
-                .line("false");
+        trait_def
+            .new_fn("remove_rows")
+            .arg_mut_self()
+            .arg("_row", "usize")
+            .arg("_count", "usize")
+            .ret("bool")
+            .line("false");
 
-            trait_def
-                .new_fn("can_fetch_more")
-                .arg_ref_self()
-                .ret("bool")
-                .line("false");
+        trait_def
+            .new_fn("can_fetch_more")
+            .arg_ref_self()
+            .ret("bool")
+            .line("false");
 
-            trait_def.new_fn("fetch_more").arg_mut_self().line("");
+        trait_def.new_fn("fetch_more").arg_mut_self().line("");
 
-            trait_def
-                .new_fn("sort")
-                .arg_mut_self()
-                .arg("_", "u8")
-                .arg("_", "SortOrder")
-                .line("");
-        }
-        _ => {}
+        trait_def
+            .new_fn("sort")
+            .arg_mut_self()
+            .arg("_", "u8")
+            .arg("_", "SortOrder")
+            .line("");
     }
 
     if object.object_type != ObjectType::Object {
         for (name, item_prop) in object.item_properties.iter() {
-            if let crate::configuration::Type::Object(item_obj) = &item_prop.item_property_type {
-                trait_def
-                    .new_fn(&snake_case(name))
-                    .arg_ref_self()
-                    .arg("index", "usize")
-                    .ret(format!("&{typ}", typ = item_obj.name));
+            let name = snake_case(name);
 
-                trait_def
-                    .new_fn(&format!("{}_mut", &snake_case(name)))
+            trait_def
+                .new_fn(&name)
+                .arg_ref_self()
+                .arg("index", "usize")
+                .ret(rust_return_type_(item_prop));
+
+            if item_prop.write {
+                let setter_name = format!("set_{name}", name = name);
+                let setter = trait_def
+                    .new_fn(&setter_name)
                     .arg_mut_self()
                     .arg("index", "usize")
-                    .ret(format!("&mut {typ}", typ = item_obj.name));
-            } else {
-                let name = snake_case(name);
+                    .ret("bool");
 
-                trait_def
-                    .new_fn(&name)
-                    .arg_ref_self()
-                    .arg("index", "usize")
-                    .ret(rust_return_type_(item_prop));
-
-                if item_prop.write {
-                    let setter_name = format!("set_{name}", name = name);
-                    let setter = trait_def
-                        .new_fn(&setter_name)
-                        .arg_mut_self()
-                        .arg("index", "usize")
-                        .ret("bool");
-
-                    match (&item_prop.item_property_type, item_prop.optional) {
-                        (crate::configuration::Type::Simple(SimpleType::QByteArray), true) => {
-                            setter.arg("_", "Option<&[u8]>");
-                        }
-                        (crate::configuration::Type::Simple(SimpleType::QByteArray), false) => {
-                            setter.arg("_", "&[u8]");
-                        }
-                        _ => {
-                            setter.arg("_", rust_type_(item_prop));
-                        }
+                match (&item_prop.item_property_type, item_prop.optional) {
+                    (SimpleType::QByteArray, true) => {
+                        setter.arg("_", "Option<&[u8]>");
+                    }
+                    (SimpleType::QByteArray, false) => {
+                        setter.arg("_", "&[u8]");
+                    }
+                    _ => {
+                        setter.arg("_", rust_type_(item_prop));
                     }
                 }
             }

@@ -1,8 +1,7 @@
 use crate::configuration::*;
 
-#[derive(Default)]
 pub struct ItemProp {
-    item_property_type: Option<Type>,
+    item_property_type: SimpleType,
     optional: bool,
     roles: Vec<Vec<String>>,
     rust_by_value: bool,
@@ -10,32 +9,14 @@ pub struct ItemProp {
 }
 
 impl ItemProp {
-    pub fn new() -> Self {
+    pub fn new(simple_type: SimpleType) -> Self {
         Self {
             optional: false,
             rust_by_value: false,
             write: false,
             roles: vec![vec![]],
-            item_property_type: None,
+            item_property_type: simple_type,
         }
-    }
-
-    pub fn simple(
-        mut self,
-        item_property_type: SimpleType,
-    ) -> Self {
-        self.item_property_type
-            .replace(Type::Simple(item_property_type));
-        self
-    }
-
-    pub fn object(
-        mut self,
-        object_property_type: std::rc::Rc<Object>,
-    ) -> Self {
-        self.item_property_type
-            .replace(Type::Object(object_property_type));
-        self
     }
 
     pub fn optional(mut self) -> Self {
@@ -66,7 +47,7 @@ impl ItemProp {
             optional,
             rust_by_value,
             write,
-            item_property_type: item_property_type.unwrap(),
+            item_property_type,
             roles,
         }
     }

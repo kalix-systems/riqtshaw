@@ -157,7 +157,6 @@ pub enum SimpleType {
     QUint16,
     QUint32,
     QUint64,
-    QObject(String),
 }
 
 impl SimpleType {
@@ -177,7 +176,6 @@ impl SimpleType {
             SimpleType::QUint16 => "quint16",
             SimpleType::QUint32 => "quint32",
             SimpleType::QUint64 => "quint64",
-            SimpleType::QObject(name) => name,
         }
     }
 
@@ -213,7 +211,6 @@ impl SimpleType {
             SimpleType::QUint16 => "u16",
             SimpleType::QUint32 => "u32",
             SimpleType::QUint64 => "u64",
-            SimpleType::QObject(name) => name,
         }
     }
 
@@ -292,21 +289,11 @@ impl Type {
 
 #[derive(PartialEq, Debug)]
 pub struct ItemProperty {
-    pub item_property_type: Type,
+    pub item_property_type: SimpleType,
     pub optional: bool,
     pub roles: Vec<Vec<String>>,
     pub rust_by_value: bool,
     pub write: bool,
-}
-
-impl ItemProperty {
-    pub fn is_object(&self) -> bool {
-        if let Type::Object(_) = self.item_property_type {
-            true
-        } else {
-            false
-        }
-    }
 }
 
 impl ItemProperty {

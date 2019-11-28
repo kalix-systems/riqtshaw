@@ -17,7 +17,7 @@ pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
             index_type = index_decl,
             prop_type = item_prop.c_get_type()
         )?;
-        } else if let Type::Simple(_) = item_prop.item_property_type {
+        } else {
             writeln!(
             w,
             "{return_type} {snake_class_name}_data_{snake_data_name}(const {camel_class_name}::Private*, {prop_type});",
@@ -27,16 +27,6 @@ pub fn define_ffi_getters(o: &Object, w: &mut Vec<u8>) -> Result<()> {
             camel_class_name = o.name,
             prop_type =  index_decl
         )?;
-        } else if let Type::Object(_) = item_prop.item_property_type {
-            writeln!(
-                w,
-                "{return_type}Ref {snake_class_name}_data_{snake_data_name}(const {camel_class_name}::Private*, {prop_type});",
-                return_type = item_prop.cpp_set_type(),
-                snake_class_name = lcname,
-                snake_data_name = snake_case(obj_name),
-                camel_class_name = o.name,
-                prop_type =  index_decl
-            )?;
         }
 
         if item_prop.write {
@@ -105,11 +95,9 @@ QHash<int, QByteArray> {0}::roleNames() const {{
 
 pub(super) fn property_type(prop: &ItemProperty) -> String {
     if prop.optional && !prop.item_property_type.is_complex() {
-        return "QVariant".into();
-    }
-    match &prop.item_property_type {
-        Type::Simple(_) => prop.type_name().to_string(),
-        Type::Object(obj) => obj.name.clone() + "Ref",
+        "QVariant".into()
+    } else {
+        prop.type_name().to_string()
     }
 }
 
@@ -297,8 +285,4 @@ pub(super) fn write_object_c_decl(block: &mut Block, o: &Object) -> Result<()> {
 
 pub(super) fn changed_f(o: &Object, p_name: &str) -> String {
     lower_initial(&o.name) + &upper_initial(p_name) + "Changed"
-}
-
-pub(super) fn call_change_function(p_name: &str) -> String {
-    p_name.to_owned() + "Changed"
 }

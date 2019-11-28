@@ -21,21 +21,10 @@ pub(super) fn push_model(scope: &mut Scope, object: &Object) {
 }
 
 fn model_def(object: &Object) -> Struct {
-    let mut model = match object.object_type {
+    match object.object_type {
         ObjectType::List => list_model_def(object),
         _ => unreachable!(),
-    };
-
-    for (item_prop_name, item_prop) in object.item_properties.iter() {
-        if let crate::configuration::Type::Object(item_obj) = &item_prop.item_property_type {
-            model.field(
-                &format!("pub(super) {}", &ptr_bundle_factory_name(item_prop_name)),
-                ptr_bundle_factory_signature(&object, item_obj),
-            );
-        }
     }
-
-    model
 }
 
 fn list_model_def(object: &Object) -> Struct {
@@ -72,12 +61,12 @@ fn list_model_def(object: &Object) -> Struct {
 
 fn model_imp(object: &Object, model_struct: &Struct) -> Impl {
     match object.object_type {
-        ObjectType::List => list_model_imp(object, model_struct),
+        ObjectType::List => list_model_imp(model_struct),
         _ => unreachable!(),
     }
 }
 
-fn list_model_imp(object: &Object, model_struct: &Struct) -> Impl {
+fn list_model_imp(model_struct: &Struct) -> Impl {
     let mut imp = Impl::new(model_struct.ty());
 
     imp.push_fn(layout_about_to_be_changed())
@@ -91,12 +80,6 @@ fn list_model_imp(object: &Object, model_struct: &Struct) -> Impl {
         .push_fn(list_begin_remove_rows())
         .push_fn(data_changed())
         .push_fn(list_begin_move_rows());
-
-    for (item_prop_name, item_prop) in object.item_properties.iter() {
-        if let crate::configuration::Type::Object(item_obj) = &item_prop.item_property_type {
-            imp.push_fn(factory(item_prop_name, item_obj));
-        }
-    }
 
     imp
 }
@@ -218,25 +201,6 @@ fn list_begin_move_rows() -> Func {
         .arg("last", "usize")
         .arg("destination", "usize")
         .line("if !self.qobject.is_null() { (self.begin_move_rows)(self.qobject, first, last, destination); }");
-
-    func
-}
-
-fn factory(item_prop_name: &str, item_prop: &Object) -> Func {
-    let mut func = Func::new(&format!("{}_new", snake_case(item_prop_name)));
-
-    func.arg_mut_self()
-        .vis("pub")
-        .ret(format!("Option<{}>", item_prop.name))
-        .line("if self.qobject.is_null() { return None; }")
-        .line(format!(
-            "let ptr_bundle = (self.{})(self.qobject);",
-            &ptr_bundle_factory_name(item_prop_name)
-        ))
-        .line(format!(
-            "Some(unsafe {{ {name}_new_inner(ptr_bundle) }})",
-            name = snake_case(item_prop_name)
-        ));
 
     func
 }

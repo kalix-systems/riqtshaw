@@ -20,10 +20,10 @@ pub(super) fn write_model_getter_setter(
     )?;
 
     match item_prop.item_property_type {
-        Type::Simple(SimpleType::QString) => {
+        SimpleType::QString => {
             getter::qstring(write_buf, name, idx, item_prop, obj)?;
         }
-        Type::Simple(SimpleType::QByteArray) => {
+        SimpleType::QByteArray => {
             getter::qbytearray(write_buf, name, idx, item_prop, obj)?;
         }
         _ => {
