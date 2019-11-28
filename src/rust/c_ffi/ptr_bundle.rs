@@ -91,12 +91,8 @@ fn fields(object: &Object, name: &str, bundle: &mut Struct) {
             for (item_prop_name, item_prop) in object.item_properties.iter() {
                 if let Type::Object(item_obj) = &item_prop.item_property_type {
                     bundle.field(
-                        &format!("{}_ptr_bundle_factory", snake_case(item_prop_name)),
-                        format!(
-                            "fn(*mut {qobj}) -> {ptr_bundle}",
-                            qobj = qobject(&item_obj.name),
-                            ptr_bundle = ptr_bundle_name(&item_obj)
-                        ),
+                        &ptr_bundle_factory_name(item_prop_name),
+                        ptr_bundle_factory_signature(&object, item_obj),
                     );
                 }
             }

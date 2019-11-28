@@ -54,3 +54,20 @@ pub fn write_interface(conf: &Config) -> Result<()> {
 
     write_if_different(file, scope.to_string().as_bytes())
 }
+
+fn ptr_bundle_name(object: &Object) -> String {
+    let name = &object.name;
+    format!("{}PtrBundle", name)
+}
+
+fn ptr_bundle_factory_name(item_prop_name: &str) -> String {
+    format!("{}_ptr_bundle_factory", snake_case(item_prop_name))
+}
+
+fn ptr_bundle_factory_signature(parent: &Object, item_obj: &Object) -> String {
+    format!(
+        "fn(*mut {qobj}) -> *mut {ptr_bundle}",
+        qobj = qobject(&parent.name),
+        ptr_bundle = ptr_bundle_name(&item_obj)
+    )
+}

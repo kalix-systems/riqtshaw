@@ -38,8 +38,3 @@ pub(super) fn push_clear(scope: &mut Scope, object: &Object) {
 
     scope.push_fn(func);
 }
-
-fn ptr_bundle_name(object: &Object) -> String {
-    let name = &object.name;
-    format!("{}PtrBundle", name)
-}

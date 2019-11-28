@@ -64,10 +64,7 @@ fn fields(object: &Object, name: &str, block: &mut Block) {
 
             for (item_prop_name, item_prop) in object.item_properties.iter() {
                 if let Type::Object(_) = &item_prop.item_property_type {
-                    block.line(&format!(
-                        "{}_ptr_bundle_factory,",
-                        snake_case(item_prop_name)
-                    ));
+                    block.line(&format!("{},", ptr_bundle_factory_name(item_prop_name)));
                 }
             }
         }
@@ -159,6 +156,12 @@ pub(super) fn model(object: &Object, name: &str) -> Option<Block> {
         ",
         name = snake_case(name)
     ));
+
+    for (item_prop_name, item_prop) in object.item_properties.iter() {
+        if let Type::Object(_) = &item_prop.item_property_type {
+            block.line(&format!("{},", ptr_bundle_factory_name(item_prop_name)));
+        }
+    }
     block.after(";");
 
     Some(block)
