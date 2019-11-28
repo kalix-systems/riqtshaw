@@ -154,7 +154,7 @@ fn layout_about_to_be_changed() -> Func {
 
     func.vis("pub")
         .arg_mut_self()
-        .line("(self.layout_about_to_be_changed)(self.qobject);");
+        .line("if !self.qobject.is_null() { (self.layout_about_to_be_changed)(self.qobject); }");
 
     func
 }
@@ -163,7 +163,7 @@ fn layout_changed() -> Func {
     let mut func = Func::new("layout_changed");
     func.vis("pub")
         .arg_mut_self()
-        .line("(self.layout_changed)(self.qobject)");
+        .line("if !self.qobject.is_null() { (self.layout_changed)(self.qobject) }");
 
     func
 }
@@ -174,7 +174,7 @@ fn data_changed() -> Func {
         .arg_mut_self()
         .arg("first", "usize")
         .arg("last", "usize")
-        .line("(self.data_changed)(self.qobject, first, last);");
+        .line("if !self.qobject.is_null() { (self.data_changed)(self.qobject, first, last); }");
 
     func
 }
@@ -184,7 +184,7 @@ fn begin_reset_model() -> Func {
 
     func.vis("pub")
         .arg_mut_self()
-        .line("(self.begin_reset_model)(self.qobject);");
+        .line("if !self.qobject.is_null() { (self.begin_reset_model)(self.qobject); }");
 
     func
 }
@@ -194,7 +194,7 @@ fn end_reset_model() -> Func {
 
     func.vis("pub")
         .arg_mut_self()
-        .line("(self.end_reset_model)(self.qobject);");
+        .line("if !self.qobject.is_null() { (self.end_reset_model)(self.qobject); }");
 
     func
 }
@@ -204,7 +204,7 @@ fn end_remove_rows() -> Func {
 
     func.vis("pub")
         .arg_mut_self()
-        .line("(self.end_remove_rows)(self.qobject);");
+        .line("if !self.qobject.is_null() { (self.end_remove_rows)(self.qobject); }");
 
     func
 }
@@ -214,7 +214,7 @@ fn end_move_rows() -> Func {
 
     func.vis("pub")
         .arg_mut_self()
-        .line("(self.end_move_rows)(self.qobject);");
+        .line("if !self.qobject.is_null() { (self.end_move_rows)(self.qobject); }");
 
     func
 }
@@ -224,7 +224,7 @@ fn end_insert_rows() -> Func {
 
     func.vis("pub")
         .arg_mut_self()
-        .line("(self.end_insert_rows)(self.qobject);");
+        .line("if !self.qobject.is_null() { (self.end_insert_rows)(self.qobject); }");
 
     func
 }
@@ -237,7 +237,7 @@ fn tree_begin_insert_rows() -> Func {
         .arg("index", "Option<usize>")
         .arg("first", "usize")
         .arg("last", "usize")
-        .line("(self.begin_insert_rows)(self.qobject, index.into(), first, last);");
+        .line("if !self.qobject.is_null() { (self.begin_insert_rows)(self.qobject, index.into(), first, last); }");
 
     func
 }
@@ -249,7 +249,9 @@ fn list_begin_insert_rows() -> Func {
         .arg_mut_self()
         .arg("first", "usize")
         .arg("last", "usize")
-        .line("(self.begin_insert_rows)(self.qobject, first, last);");
+        .line(
+            "if !self.qobject.is_null() { (self.begin_insert_rows)(self.qobject, first, last); }",
+        );
 
     func
 }
@@ -262,7 +264,7 @@ fn tree_begin_remove_rows() -> Func {
         .arg("index", "Option<usize>")
         .arg("first", "usize")
         .arg("last", "usize")
-        .line("(self.begin_remove_rows)(self.qobject, index.into(), first, last);");
+        .line("if !self.qobject.is_null() { (self.begin_remove_rows)(self.qobject, index.into(), first, last); }");
 
     func
 }
@@ -274,7 +276,9 @@ fn list_begin_remove_rows() -> Func {
         .arg_mut_self()
         .arg("first", "usize")
         .arg("last", "usize")
-        .line("(self.begin_remove_rows)(self.qobject, first, last);");
+        .line(
+            "if !self.qobject.is_null() { (self.begin_remove_rows)(self.qobject, first, last); }",
+        );
 
     func
 }
@@ -290,7 +294,7 @@ fn tree_begin_move_rows() -> Func {
         .arg("dest", "Option<usize>")
         .arg("destination", "usize")
         .line(
-            "(self.begin_move_rows)(self.qobject, index.into(), first, last, dest.into(), destination);",
+            "if !self.qobject.is_null() { (self.begin_move_rows)(self.qobject, index.into(), first, last, dest.into(), destination); }",
         );
 
     func
@@ -304,7 +308,7 @@ fn list_begin_move_rows() -> Func {
         .arg("first", "usize")
         .arg("last", "usize")
         .arg("destination", "usize")
-        .line("(self.begin_move_rows)(self.qobject, first, last, destination);");
+        .line("if !self.qobject.is_null() { (self.begin_move_rows)(self.qobject, first, last, destination); }");
 
     func
 }
