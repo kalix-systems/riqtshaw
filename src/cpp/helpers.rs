@@ -302,3 +302,7 @@ pub(super) fn write_object_c_decl(block: &mut Block, o: &Object) -> Result<()> {
 pub(super) fn changed_f(o: &Object, p_name: &str) -> String {
     lower_initial(&o.name) + &upper_initial(p_name) + "Changed"
 }
+
+pub(super) fn call_change_function(p_name: &str) -> String {
+    p_name.to_owned() + "Changed"
+}

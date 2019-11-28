@@ -191,12 +191,67 @@ fn constructor_args(
                 if let Type::Object(object_item_prop) = &item_prop.item_property_type {
                     writeln!(
                         write_buf,
-                        "/*this is where your segfault is coming from*/ , []({}* o){{ return new {}PtrBundle{{}}; }}",
+                        ", []({}* o){{ return new {}PtrBundle {{ new {1}(o)",
                         obj.name, object_item_prop.name
                     )?;
+                    ptr_bundle_struct_args(write_buf, object_item_prop, conf)?;
+                    writeln!(write_buf, "}}; }}")?;
                 }
             }
-            // here we need to add the ptr bundle constructors
+        }
+        ObjectType::Tree => {
+            writeln!(
+                write_buf,
+                include_str!("../../cpp/tree_constructor_lambdas.cpp_string"),
+                name = obj.name,
+                snake_case_class_name = snake_case(&obj.name),
+                col_count = obj.column_count() - 1
+            )?;
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+pub fn ptr_bundle_struct_args(write_buf: &mut Vec<u8>, obj: &Object, conf: &Config) -> Result<()> {
+    for (name, prop) in obj.properties.iter() {
+        if let Type::Object(object) = &prop.property_type {
+            write!(
+                write_buf,
+                ", new {property_class}(o)",
+                property_class = object.name
+            )?;
+            ptr_bundle_struct_args(write_buf, object, conf)?;
+        } else {
+            write!(
+                write_buf,
+                ",[]({}* o){{Q_EMIT o->{}();}}",
+                obj.name,
+                call_change_function(name)
+            )?;
+        }
+    }
+
+    match obj.object_type {
+        ObjectType::List => {
+            writeln!(
+                write_buf,
+                include_str!("../../cpp/list_constructor_lambdas.cpp_string"),
+                name = obj.name,
+                col_count = obj.column_count() - 1
+            )?;
+            for (_, item_prop) in obj.item_properties.iter() {
+                if let Type::Object(object_item_prop) = &item_prop.item_property_type {
+                    writeln!(
+                        write_buf,
+                        ", []({}* o){{ return new {}PtrBundle {{",
+                        obj.name, object_item_prop.name
+                    )?;
+                    ptr_bundle_struct_args(write_buf, obj, conf)?;
+                    writeln!(write_buf, "}}; }}")?;
+                }
+            }
         }
         ObjectType::Tree => {
             writeln!(
