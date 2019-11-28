@@ -19,6 +19,7 @@ pub(super) fn push_ptr_bundle(scope: &mut Scope, object: &Object) {
 
 pub(super) fn push_new(scope: &mut Scope, object: &Object) {
     scope.push_fn(new_imp::new(object));
+    scope.push_fn(new_imp::new_inner(object));
 }
 
 pub(super) fn push_functions(scope: &mut Scope, object: &Object) {

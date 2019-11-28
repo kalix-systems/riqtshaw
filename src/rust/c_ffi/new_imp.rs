@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn new(object: &Object) -> Func {
+pub(crate) fn new(object: &Object) -> Func {
     let name = snake_case(&object.name);
     let mut func = Func::new(&format!("{}_new", &name));
 
@@ -8,6 +8,23 @@ pub(super) fn new(object: &Object) -> Func {
         .vis("pub unsafe")
         .attr("no_mangle")
         .ret(format!("*mut {}", object.name))
+        .arg("ptr_bundle", format!("*mut {}", ptr_bundle_name(object)))
+        .line(format!(
+            "let d_{name} = {name}_new_inner(ptr_bundle);",
+            name = name
+        ));
+
+    func.line(format!("Box::into_raw(Box::new(d_{name}))", name = name));
+
+    func
+}
+
+pub(crate) fn new_inner(object: &Object) -> Func {
+    let name = snake_case(&object.name);
+    let mut func = Func::new(&format!("{}_new_inner", &name));
+
+    func.vis("pub unsafe")
+        .ret(&object.name)
         .arg("ptr_bundle", format!("*mut {}", ptr_bundle_name(object)))
         .line("let ptr_bundle = *ptr_bundle;")
         .line("");
@@ -21,7 +38,7 @@ pub(super) fn new(object: &Object) -> Func {
 
     new_ctor(object, &name, &mut func);
 
-    func.line(format!("Box::into_raw(Box::new(d_{name}))", name = name));
+    func.line(format!("d_{name}", name = name));
 
     func
 }
