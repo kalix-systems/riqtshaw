@@ -106,7 +106,12 @@ fn initialize_members(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) 
                 snake_case(&o.name),
                 snake_case(name)
             )?;
-            initialize_members(w, &format!("m_{}->", name), object, conf)?;
+            initialize_members(
+                w,
+                &format!("{prefix}m_{name}->", prefix = prefix, name = name),
+                object,
+                conf,
+            )?;
         }
     }
 
@@ -173,7 +178,12 @@ fn constructor_args(
                 prefix = prefix,
                 name = name
             )?;
-            constructor_args(write_buf, &format!("m_{}->", name), object, conf)?;
+            constructor_args(
+                write_buf,
+                &format!("{prefix}m_{name}->", prefix = prefix, name = name),
+                object,
+                conf,
+            )?;
         } else {
             write!(write_buf, ",\n{}", changed_f(obj, name))?;
         }
