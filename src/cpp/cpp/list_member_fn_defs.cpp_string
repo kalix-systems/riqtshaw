@@ -34,17 +34,17 @@ QModelIndex {name}::index(int row, int column, const QModelIndex &parent) const
     if (!parent.isValid() && row >= 0 && row < rowCount(parent) && column >= 0 && column < {column_count}) {{
         return createIndex(row, column, static_cast<quintptr>(row));
     }}
-    return QModelIndex();
+    return {{}};
 }}
 
 QModelIndex {name}::parent(const QModelIndex &) const
 {{
-    return QModelIndex();
+    return {{}};
 }}
 
 bool {name}::canFetchMore(const QModelIndex &parent) const
 {{
-    return (parent.isValid()) ? 0 : {lowercase_name}_can_fetch_more(m_d);
+    return (parent.isValid()) ? false : {lowercase_name}_can_fetch_more(m_d);
 }}
 
 void {name}::fetchMore(const QModelIndex &parent)

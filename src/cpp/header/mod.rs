@@ -30,7 +30,7 @@ pub fn write_header(conf: &Config) -> Result<()> {
 
         for object in conf.objects.values() {
             extern_block.line(format!(
-                "typedef struct {name}PtrBundle {name}PtrBundle;",
+                "using {name}PtrBundle = struct {name}PtrBundle;",
                 name = object.name
             ));
 
@@ -140,15 +140,7 @@ fn write_header_object(header_buf: &mut Vec<u8>, obj: &Object, conf: &Config) ->
 }
 
 fn write_type_def(header_buf: &mut Vec<u8>, name: &str) -> Result<()> {
-    writeln!(
-        header_buf,
-        "
-class {name};
-typedef {name}* {name}Ref;
-Q_DECLARE_METATYPE({name}Ref);
-         ",
-        name = name
-    )?;
+    writeln!(header_buf, "class {name};", name = name)?;
 
     Ok(())
 }

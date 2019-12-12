@@ -55,6 +55,7 @@ pub(super) fn write_cpp_object(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> 
 
     // start block
     writeln!(w, "{{")?;
+
     initialize_members(w, "", obj, conf)?;
 
     connect(w, "this", obj, conf)?;
