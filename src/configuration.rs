@@ -104,7 +104,7 @@ impl Object {
 pub struct Property {
     pub optional: bool,
     pub property_type: Type,
-    pub rust_by_function: bool,
+    pub rust_by_value: bool,
     pub write: bool,
 }
 

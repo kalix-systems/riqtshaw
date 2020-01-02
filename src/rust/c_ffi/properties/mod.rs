@@ -31,7 +31,7 @@ fn simple_prop(
 ) {
     match (property.is_complex(), property.optional) {
         (true, false) => {
-            if property.rust_by_function {
+            if property.rust_by_value {
                 scope.push_fn(complex_non_optional::get_by_function(
                     object, prop_name, property,
                 ));

@@ -42,22 +42,10 @@ pub(super) fn push_trait(scope: &mut Scope, object: &Object) {
                 .arg_mut_self()
                 .ret(format!("&mut {typ}", typ = typ));
         } else {
-            if property.rust_by_function {
-                trait_def
-                    .new_fn(&lc_name)
-                    .arg_ref_self()
-                    .generic("F")
-                    .bound(
-                        "F",
-                        &format!("FnOnce({ret_type})", ret_type = rust_return_type(property)),
-                    )
-                    .arg("getter", "F");
-            } else {
-                trait_def
-                    .new_fn(&lc_name)
-                    .arg_ref_self()
-                    .ret(rust_return_type(property));
-            }
+            trait_def
+                .new_fn(&lc_name)
+                .arg_ref_self()
+                .ret(rust_return_type(property));
 
             if property.write {
                 let setter_name = format!("set_{prop}", prop = snake_case(name));

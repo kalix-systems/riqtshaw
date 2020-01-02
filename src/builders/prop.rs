@@ -3,7 +3,7 @@ use crate::configuration::*;
 pub struct Prop {
     optional: bool,
     property_type: Type,
-    rust_by_function: bool,
+    rust_by_value: bool,
     write: bool,
 }
 
@@ -18,7 +18,7 @@ impl Prop {
         Self {
             optional: false,
             property_type: Type::Simple(SimpleType::Void),
-            rust_by_function: false,
+            rust_by_value: false,
             write: false,
         }
     }
@@ -28,8 +28,8 @@ impl Prop {
         self
     }
 
-    pub fn get_by_function(mut self) -> Self {
-        self.rust_by_function = true;
+    pub fn get_by_value(mut self) -> Self {
+        self.rust_by_value = true;
         self
     }
 
@@ -51,14 +51,14 @@ impl Prop {
     pub fn build(self) -> Property {
         let Prop {
             property_type,
-            rust_by_function,
+            rust_by_value,
             optional,
             write,
         } = self;
 
         Property {
             optional,
-            rust_by_function,
+            rust_by_value,
             write,
             property_type,
         }
