@@ -1,6 +1,6 @@
-mod list;
-
 use super::*;
+
+mod list;
 
 pub(crate) fn push_models(scope: &mut Scope, object: &Object) {
     if let ObjectType::List = object.object_type {

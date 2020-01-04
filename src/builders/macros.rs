@@ -44,6 +44,29 @@ macro_rules! functions {
 }
 
 #[macro_export]
+macro_rules! signals {
+    ($(
+        $key:ident ( $($arg_name:ident : $arg_type:expr),* ),
+    )*) => {
+        {
+            use $crate::configuration::{Signal, CopyType::*, CopyType};
+            use ::std::collections::BTreeMap;
+            let mut _map: BTreeMap<String, Signal> = BTreeMap::new();
+
+            $(
+                let _key   = stringify!($key).to_owned();
+                let mut _value = Sig::new();
+                $(
+                    let _value = _value.arg(stringify!($arg_name), $arg_type);
+                )*
+                let _ = _map.insert(stringify!($key).to_owned(), _value.build());
+            )*
+            _map
+        }
+    }
+}
+
+#[macro_export]
 macro_rules! objects {
     ( $($value:expr),* ) => {
         {

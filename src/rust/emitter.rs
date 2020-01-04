@@ -1,5 +1,6 @@
 use super::*;
 use codegen::{Function as CGFunc, *};
+use std::io::Write;
 
 const CLONE_DOC: &str = "Clone the emitter
 
@@ -43,6 +44,27 @@ fn emitter_def(object: &Object) -> Struct {
         );
     }
 
+    for (signal_name, signal) in object.signals.iter() {
+        let mut buf = Vec::new();
+        write!(
+            &mut buf,
+            "fn(*mut {qobject}, ",
+            qobject = qobject(&object.name)
+        )
+        .unwrap();
+
+        for arg in signal.arguments.iter() {
+            write!(&mut buf, "{typ}, ", typ = arg.argument_type.rust_type()).unwrap();
+        }
+
+        write!(&mut buf, ")").unwrap();
+
+        emitter.field(
+            &format!("pub(super) {signal_name}", signal_name = signal_name),
+            String::from_utf8(buf).unwrap(),
+        );
+    }
+
     emitter
 }
 
@@ -55,6 +77,10 @@ fn emitter_impl(object: &Object, emit_struct: &Struct) -> Impl {
 
     for prop_name in object.non_object_property_names() {
         imp.push_fn(prop_change_fn(prop_name));
+    }
+
+    for (name, signal) in object.signals.iter() {
+        imp.push_fn(signal_fn(name, signal));
     }
 
     if let ObjectType::List = object.object_type {
@@ -82,6 +108,13 @@ fn clone_fn(object: &Object, emit_struct: &Struct) -> CGFunc {
         clone_body.line(format!(
             "{prop_changed}: self.{prop_changed},",
             prop_changed = prop_changed(prop_name)
+        ));
+    }
+
+    for signal_name in object.signals.keys() {
+        clone_body.line(format!(
+            "{signal_name}: self.{signal_name},",
+            signal_name = signal_name
         ));
     }
 
@@ -126,6 +159,35 @@ fn prop_change_fn(prop_name: &str) -> CGFunc {
         "(self.{prop_changed})(ptr);",
         prop_changed = prop_changed(prop_name)
     ));
+
+    func.push_block(block);
+
+    func
+}
+
+fn signal_fn(signal_name: &str, signal: &Signal) -> CGFunc {
+    let mut func = CGFunc::new(signal_name);
+    func.vis("pub").arg_mut_self();
+
+    for arg in signal.arguments.iter() {
+        func.arg(&arg.name, arg.argument_type.rust_type());
+    }
+
+    func.line("let ptr = self.qobject.load(Ordering::SeqCst);")
+        .line("");
+
+    let mut block = Block::new("if !ptr.is_null()");
+
+    block.line(format!(
+        "(self.{signal_name})(ptr",
+        signal_name = signal_name
+    ));
+
+    for arg in signal.arguments.iter() {
+        block.line(format!("{},", arg.name));
+    }
+
+    block.line(");");
 
     func.push_block(block);
 

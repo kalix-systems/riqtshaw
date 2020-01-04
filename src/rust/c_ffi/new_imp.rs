@@ -80,6 +80,14 @@ fn fields(object: &Object, name: &str, block: &mut Block) {
                 .line(format!("{}_end_remove_rows,", &lc_name));
         }
         ObjectType::Object => {}
+    };
+
+    for signal_name in object.signals.keys() {
+        block.line(format!(
+            "{name}_{signal_name},",
+            name = &lc_name,
+            signal_name = signal_name
+        ));
     }
 }
 
@@ -114,6 +122,14 @@ pub(super) fn new_ctor(object: &Object, name: &str, func: &mut Func) {
         emit_ctor.line(&format!(
             "new_data_ready: {}_new_data_ready,",
             snake_case(name)
+        ));
+    }
+
+    for signal_name in object.signals.keys() {
+        emit_ctor.line(format!(
+            "{signal_name}: {name}_{signal_name},",
+            name = &snake_case(name),
+            signal_name = signal_name
         ));
     }
 

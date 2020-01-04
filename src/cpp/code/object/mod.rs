@@ -199,5 +199,42 @@ fn constructor_args(
         )?;
     }
 
+    for (i, (signal_name, signal)) in obj.signals.iter().enumerate() {
+        if i == 0 {
+            write!(write_buf, ",")?;
+        }
+
+        write!(write_buf, "[](const {name}* o", name = obj.name)?;
+
+        for arg in signal.arguments.iter() {
+            write!(
+                write_buf,
+                ", {typ} {arg_name}",
+                typ = arg.argument_type.cpp_set_type(),
+                arg_name = arg.name
+            )?;
+        }
+
+        write!(write_buf, ")")?;
+
+        let mut body = Block::new();
+        body.line(format!(
+            "Q_EMIT o->{signal_name}(",
+            signal_name = signal_name
+        ));
+
+        for (i, arg) in signal.arguments.iter().enumerate() {
+            if i != 0 {
+                body.line(", ");
+            }
+
+            body.line(&arg.name);
+        }
+
+        body.line(");");
+
+        write!(write_buf, "{}", body)?;
+    }
+
     Ok(())
 }

@@ -2,10 +2,16 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 
+pub type Objects = BTreeMap<String, Rc<Object>>;
+pub type Signals = BTreeMap<String, Signal>;
+pub type Properties = BTreeMap<String, Property>;
+pub type ItemProperties = BTreeMap<String, ItemProperty>;
+pub type Functions = BTreeMap<String, Function>;
+
 pub struct Config {
     pub out_dir: PathBuf,
     pub cpp_file: PathBuf,
-    pub objects: BTreeMap<String, Rc<Object>>,
+    pub objects: Objects,
     pub rust: Rust,
     pub overwrite_implementation: bool,
 }
@@ -65,10 +71,11 @@ impl Config {
 #[derive(PartialEq, Debug)]
 pub struct Object {
     pub name: String,
-    pub functions: BTreeMap<String, Function>,
-    pub item_properties: BTreeMap<String, ItemProperty>,
+    pub functions: Functions,
+    pub item_properties: ItemProperties,
     pub object_type: ObjectType,
-    pub properties: BTreeMap<String, Property>,
+    pub properties: Properties,
+    pub signals: Signals,
 }
 
 impl Object {
@@ -157,6 +164,75 @@ pub enum SimpleType {
     QUint16,
     QUint32,
     QUint64,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum CopyType {
+    Bool,
+    Float,
+    Double,
+    Void,
+    Qint8,
+    Qint16,
+    Qint32,
+    Qint64,
+    QUint8,
+    QUint16,
+    QUint32,
+    QUint64,
+}
+
+impl CopyType {
+    pub fn name(&self) -> &str {
+        match self {
+            CopyType::Bool => "bool",
+            CopyType::Float => "float",
+            CopyType::Double => "double",
+            CopyType::Void => "void",
+            CopyType::Qint8 => "qint8",
+            CopyType::Qint16 => "qint16",
+            CopyType::Qint32 => "qint32",
+            CopyType::Qint64 => "qint64",
+            CopyType::QUint8 => "quint8",
+            CopyType::QUint16 => "quint16",
+            CopyType::QUint32 => "quint32",
+            CopyType::QUint64 => "quint64",
+        }
+    }
+
+    pub fn cpp_set_type(&self) -> &str {
+        self.name()
+    }
+
+    pub fn c_set_type(&self) -> &str {
+        self.name()
+    }
+
+    pub fn rust_type(&self) -> &str {
+        match self {
+            CopyType::Bool => "bool",
+            CopyType::Float => "f32",
+            CopyType::Double => "f64",
+            CopyType::Void => "()",
+            CopyType::Qint8 => "i8",
+            CopyType::Qint16 => "i16",
+            CopyType::Qint32 => "i32",
+            CopyType::Qint64 => "i64",
+            CopyType::QUint8 => "u8",
+            CopyType::QUint16 => "u16",
+            CopyType::QUint32 => "u32",
+            CopyType::QUint64 => "u64",
+        }
+    }
+
+    pub fn rust_type_init(&self) -> &str {
+        match self {
+            CopyType::Bool => "false",
+            CopyType::Float | CopyType::Double => "0.0",
+            CopyType::Void => "()",
+            _ => "0",
+        }
+    }
 }
 
 impl SimpleType {
@@ -333,10 +409,21 @@ pub struct Function {
     pub arguments: Vec<Argument>,
 }
 
+#[derive(PartialEq, Debug)]
+pub struct Signal {
+    pub arguments: Vec<CopyArgument>,
+}
+
 impl Function {
     pub fn type_name(&self) -> &str {
         self.return_type.name()
     }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct CopyArgument {
+    pub name: String,
+    pub argument_type: CopyType,
 }
 
 #[derive(PartialEq, Debug)]

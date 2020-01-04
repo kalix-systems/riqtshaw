@@ -3,10 +3,11 @@ use std::collections::BTreeMap;
 
 pub struct Obj<'a> {
     name: Option<&'a str>,
-    functions: BTreeMap<String, Function>,
-    item_properties: BTreeMap<String, ItemProperty>,
+    functions: Functions,
+    item_properties: ItemProperties,
     object_type: ObjectType,
-    properties: BTreeMap<String, Property>,
+    properties: Properties,
+    signals: Signals,
 }
 
 impl Default for Obj<'_> {
@@ -22,6 +23,7 @@ impl<'a> Obj<'a> {
             functions: BTreeMap::new(),
             item_properties: BTreeMap::new(),
             properties: BTreeMap::new(),
+            signals: BTreeMap::new(),
             object_type: ObjectType::Object,
         }
     }
@@ -46,6 +48,11 @@ impl<'a> Obj<'a> {
         self
     }
 
+    pub fn signals(mut self, signals: BTreeMap<String, Signal>) -> Self {
+        self.signals = signals;
+        self
+    }
+
     pub fn list(mut self) -> Self {
         self.object_type = ObjectType::List;
         self
@@ -58,6 +65,7 @@ impl<'a> Obj<'a> {
             item_properties,
             object_type,
             properties,
+            signals,
         } = self;
 
         let name = name?.to_owned();
@@ -68,6 +76,7 @@ impl<'a> Obj<'a> {
             item_properties,
             properties,
             object_type,
+            signals,
         })
     }
 }

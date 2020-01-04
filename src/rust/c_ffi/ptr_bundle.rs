@@ -1,5 +1,6 @@
 use super::*;
 use codegen::Struct;
+use std::io::Write;
 
 pub(crate) fn ptr_bundle(object: &Object) -> Struct {
     let name = &object.name;
@@ -89,5 +90,25 @@ fn fields(object: &Object, name: &str, bundle: &mut Struct) {
                 );
         }
         ObjectType::Object => {}
+    };
+
+    for (signal_name, signal) in object.signals.iter() {
+        let mut buf = Vec::new();
+        write!(&mut buf, "fn(*mut {qobject}, ", qobject = &qobj).unwrap();
+
+        for arg in signal.arguments.iter() {
+            write!(&mut buf, "{typ}, ", typ = arg.argument_type.rust_type()).unwrap();
+        }
+
+        write!(&mut buf, ")").unwrap();
+
+        bundle.field(
+            &format!(
+                "{name}_{signal_name}",
+                name = &lc_name,
+                signal_name = signal_name
+            ),
+            String::from_utf8(buf).unwrap(),
+        );
     }
 }

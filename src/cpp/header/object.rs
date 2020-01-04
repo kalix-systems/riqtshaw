@@ -125,6 +125,25 @@ pub(super) fn qsignals(header_buf: &mut Vec<u8>, obj: &Object) -> Result<()> {
         writeln!(header_buf, "void {}Changed();", name)?;
     }
 
+    for (name, signal) in obj.signals.iter() {
+        write!(header_buf, "void {name}(", name = name)?;
+
+        for (i, arg) in signal.arguments.iter().enumerate() {
+            if i != 0 {
+                write!(header_buf, ", ")?;
+            }
+
+            write!(
+                header_buf,
+                "{typ} {arg_name}",
+                typ = arg.argument_type.cpp_set_type(),
+                arg_name = arg.name
+            )?;
+        }
+
+        write!(header_buf, ") const;")?;
+    }
+
     Ok(())
 }
 

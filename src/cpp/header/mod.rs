@@ -109,6 +109,22 @@ fn write_extern_typedefs(block: &mut Block, obj: &Object) {
             ));
         }
         ObjectType::Object => {}
+    };
+
+    for (signal_name, signal) in obj.signals.iter() {
+        block.line(format!(
+            "void (*{snake_class_name}_{signal_name})(const {class_name}*",
+            snake_class_name = lcname,
+            signal_name = signal_name,
+            class_name = obj.name
+        ));
+
+        for arg in signal.arguments.iter() {
+            block.line(",");
+            block.line(arg.argument_type.c_set_type());
+        }
+
+        block.line(");");
     }
 }
 
