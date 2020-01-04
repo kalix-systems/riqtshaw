@@ -7,6 +7,8 @@ pub type Signals = BTreeMap<String, Signal>;
 pub type Properties = BTreeMap<String, Property>;
 pub type ItemProperties = BTreeMap<String, ItemProperty>;
 pub type Functions = BTreeMap<String, Function>;
+pub type Connections = Vec<Connection>;
+pub type Hooks = (Signals, Connections);
 
 pub struct Config {
     pub out_dir: PathBuf,
@@ -76,6 +78,7 @@ pub struct Object {
     pub object_type: ObjectType,
     pub properties: Properties,
     pub signals: Signals,
+    pub connections: Connections,
 }
 
 impl Object {
@@ -435,5 +438,17 @@ pub struct Argument {
 impl Argument {
     pub fn type_name(&self) -> &str {
         self.argument_type.name()
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub struct Connection {
+    pub(crate) signal: String,
+    pub(crate) function: String,
+}
+
+impl Connection {
+    pub fn new(signal: String, function: String) -> Self {
+        Self { signal, function }
     }
 }

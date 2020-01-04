@@ -1,3 +1,4 @@
+pub mod conn;
 pub mod func;
 pub mod item_prop;
 pub mod macros;

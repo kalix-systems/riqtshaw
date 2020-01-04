@@ -86,7 +86,7 @@ fn fields(object: &Object, name: &str, block: &mut Block) {
         block.line(format!(
             "{name}_{signal_name},",
             name = &lc_name,
-            signal_name = signal_name
+            signal_name = snake_case(signal_name)
         ));
     }
 }
@@ -128,8 +128,8 @@ pub(super) fn new_ctor(object: &Object, name: &str, func: &mut Func) {
     for signal_name in object.signals.keys() {
         emit_ctor.line(format!(
             "{signal_name}: {name}_{signal_name},",
-            name = &snake_case(name),
-            signal_name = signal_name
+            name = snake_case(name),
+            signal_name = snake_case(signal_name)
         ));
     }
 

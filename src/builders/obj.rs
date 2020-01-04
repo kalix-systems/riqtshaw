@@ -8,6 +8,7 @@ pub struct Obj<'a> {
     object_type: ObjectType,
     properties: Properties,
     signals: Signals,
+    connections: Connections,
 }
 
 impl Default for Obj<'_> {
@@ -20,10 +21,11 @@ impl<'a> Obj<'a> {
     pub fn new() -> Self {
         Self {
             name: None,
-            functions: BTreeMap::new(),
-            item_properties: BTreeMap::new(),
-            properties: BTreeMap::new(),
-            signals: BTreeMap::new(),
+            functions: Functions::new(),
+            item_properties: ItemProperties::new(),
+            properties: Properties::new(),
+            signals: Signals::new(),
+            connections: Connections::new(),
             object_type: ObjectType::Object,
         }
     }
@@ -48,8 +50,10 @@ impl<'a> Obj<'a> {
         self
     }
 
-    pub fn signals(mut self, signals: BTreeMap<String, Signal>) -> Self {
+    pub fn hooks(mut self, hooks: Hooks) -> Self {
+        let (signals, connections) = hooks;
         self.signals = signals;
+        self.connections = connections;
         self
     }
 
@@ -66,6 +70,7 @@ impl<'a> Obj<'a> {
             object_type,
             properties,
             signals,
+            connections,
         } = self;
 
         let name = name?.to_owned();
@@ -77,6 +82,7 @@ impl<'a> Obj<'a> {
             properties,
             object_type,
             signals,
+            connections,
         })
     }
 }

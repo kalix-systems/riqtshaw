@@ -60,7 +60,10 @@ fn emitter_def(object: &Object) -> Struct {
         write!(&mut buf, ")").unwrap();
 
         emitter.field(
-            &format!("pub(super) {signal_name}", signal_name = signal_name),
+            &format!(
+                "pub(super) {signal_name}",
+                signal_name = snake_case(signal_name)
+            ),
             String::from_utf8(buf).unwrap(),
         );
     }
@@ -114,7 +117,7 @@ fn clone_fn(object: &Object, emit_struct: &Struct) -> CGFunc {
     for signal_name in object.signals.keys() {
         clone_body.line(format!(
             "{signal_name}: self.{signal_name},",
-            signal_name = signal_name
+            signal_name = snake_case(signal_name)
         ));
     }
 
@@ -166,7 +169,7 @@ fn prop_change_fn(prop_name: &str) -> CGFunc {
 }
 
 fn signal_fn(signal_name: &str, signal: &Signal) -> CGFunc {
-    let mut func = CGFunc::new(signal_name);
+    let mut func = CGFunc::new(&snake_case(&signal_name));
     func.vis("pub").arg_mut_self();
 
     for arg in signal.arguments.iter() {
@@ -180,7 +183,7 @@ fn signal_fn(signal_name: &str, signal: &Signal) -> CGFunc {
 
     block.line(format!(
         "(self.{signal_name})(ptr",
-        signal_name = signal_name
+        signal_name = snake_case(signal_name)
     ));
 
     for arg in signal.arguments.iter() {

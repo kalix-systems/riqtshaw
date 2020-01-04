@@ -58,7 +58,8 @@ pub(super) fn write_cpp_object(w: &mut Vec<u8>, obj: &Object, conf: &Config) -> 
 
     initialize_members(w, "", obj, conf)?;
 
-    connect(w, "this", obj, conf)?;
+    connect(w, "this", obj)?;
+    connect_fetch_more(w, "this", obj)?;
 
     if obj.object_type != ObjectType::Object {
         writeln!(w, "initHeaderData();")?;
@@ -119,17 +120,62 @@ fn initialize_members(w: &mut Vec<u8>, prefix: &str, o: &Object, conf: &Config) 
     Ok(())
 }
 
-fn connect(w: &mut Vec<u8>, d: &str, o: &Object, conf: &Config) -> Result<()> {
+fn connect(w: &mut Vec<u8>, d: &str, o: &Object) -> Result<()> {
     for (name, p) in o.properties.iter() {
         if let Type::Object(object) = &p.property_type {
-            connect(w, &format!("{}->m_{}", d, name), object, conf)?;
+            let new_d = &format!("{}->m_{}", d, name);
+            connect(w, new_d, object)?;
+        }
+    }
+
+    for Connection {
+        signal: signal_name,
+        function: function_name,
+    } in o.connections.iter()
+    {
+        if !o.signals.contains_key(signal_name) {
+            panic!("Signal {} does not exist", signal_name);
+        }
+
+        let function = o
+            .functions
+            .get(function_name)
+            .unwrap_or_else(|| panic!("Function {} does not exist", function_name));
+
+        assert!(
+            function.arguments.is_empty(),
+            "Functions in connections cannot take arguments"
+        );
+
+        writeln!(
+            w,
+            "
+            connect({d}, &{class_name}::{signal}, {d}, [this]() {{
+                    {d}->{func}();
+            }}, Qt::QueuedConnection);
+",
+            d = d,
+            class_name = o.name,
+            func = function_name,
+            signal = signal_name,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn connect_fetch_more(w: &mut Vec<u8>, d: &str, o: &Object) -> Result<()> {
+    for (name, p) in o.properties.iter() {
+        if let Type::Object(object) = &p.property_type {
+            let new_d = &format!("{}->m_{}", d, name);
+            connect_fetch_more(w, new_d, object)?;
         }
     }
 
     if o.object_type != ObjectType::Object {
         writeln!(
             w,
-            "    connect({}, &{1}::newDataReady, {0}, [this](const QModelIndex& i) {{
+            "connect({}, &{1}::newDataReady, {0}, [this](const QModelIndex& i) {{
         {0}->fetchMore(i);
     }}, Qt::QueuedConnection);",
             d, o.name

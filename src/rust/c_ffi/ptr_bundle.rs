@@ -106,7 +106,7 @@ fn fields(object: &Object, name: &str, bundle: &mut Struct) {
             &format!(
                 "{name}_{signal_name}",
                 name = &lc_name,
-                signal_name = signal_name
+                signal_name = snake_case(signal_name)
             ),
             String::from_utf8(buf).unwrap(),
         );

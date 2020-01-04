@@ -45,13 +45,20 @@ macro_rules! functions {
 
 #[macro_export]
 macro_rules! signals {
-    ($(
-        $key:ident ( $($arg_name:ident : $arg_type:expr),* ),
-    )*) => {
+    (
+        $(
+            $key:ident ( $($arg_name:ident : $arg_type:expr),* ),
+        )*
+        |
+        $(
+            connect $event:ident $response:ident
+        )*
+    ) => {
         {
-            use $crate::configuration::{Signal, CopyType::*, CopyType};
+            use $crate::configuration::{Signal, CopyType::*, CopyType, Connection};
             use ::std::collections::BTreeMap;
             let mut _map: BTreeMap<String, Signal> = BTreeMap::new();
+            let mut _conns: Vec<Connection> = Vec::new();
 
             $(
                 let _key   = stringify!($key).to_owned();
@@ -61,7 +68,15 @@ macro_rules! signals {
                 )*
                 let _ = _map.insert(stringify!($key).to_owned(), _value.build());
             )*
-            _map
+            $(
+                let _conn = Connection::new(
+                    stringify!($event).into(),
+                    stringify!($response).into(),
+                );
+                _conns.push(_conn);
+             )*
+
+            (_map, _conns)
         }
     }
 }
