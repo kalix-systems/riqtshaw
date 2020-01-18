@@ -245,10 +245,8 @@ fn constructor_args(
         )?;
     }
 
-    for (i, (signal_name, signal)) in obj.signals.iter().enumerate() {
-        if i == 0 {
-            write!(write_buf, ",")?;
-        }
+    for (signal_name, signal) in obj.signals.iter() {
+        write!(write_buf, ",")?;
 
         write!(write_buf, "[](const {name}* o", name = obj.name)?;
 
