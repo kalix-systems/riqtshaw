@@ -1,5 +1,6 @@
 use super::*;
 
+#[allow(unused)]
 pub(super) fn get_by_function(object: &Object, prop_name: &str, property: &Property) -> Func {
     let mut func = Func::new(&format!("{}_get", base(object, prop_name)));
     func.extern_abi("C")
@@ -17,6 +18,8 @@ pub(super) fn get_by_function(object: &Object, prop_name: &str, property: &Prope
     block.line("let str_: *const c_char = value.as_ptr() as (*const c_char);");
     block.line("set(prop, str_, to_c_int(value.len()));");
     block.after(");");
+
+    func.push_block(block);
 
     func
 }
